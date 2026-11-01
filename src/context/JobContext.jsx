@@ -196,7 +196,12 @@ export function JobProvider({ children }) {
       lastSyncTimestamp.current = now;
       localStorage.setItem(TIME_KEY, String(now));
 
-      fetch('/api/jobs', {
+      const isLocalHost =
+        typeof window !== 'undefined' &&
+        (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      const saveEndpoint = isLocalHost ? '/api/jobs' : 'http://localhost:5173/api/jobs';
+
+      fetch(saveEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobs, updatedAt: now }),

@@ -65,12 +65,23 @@ export default function AdminPage() {
   const handlePublishToVercel = async () => {
     setIsPublishingOnline(true);
     setPublishFeedback(null);
+    const isLocalHost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const endpoint = isLocalHost
+      ? '/api/publish-vercel'
+      : 'http://localhost:5173/api/publish-vercel';
+
     try {
-      const res = await fetch('/api/publish-vercel', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jobs, updatedAt: Date.now() }),
       });
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('NOT_JSON');
+      }
       const data = await res.json();
       if (res.ok && data.success) {
         setPublishFeedback({
@@ -80,13 +91,13 @@ export default function AdminPage() {
       } else {
         setPublishFeedback({
           type: 'error',
-          text: data.error || 'Fitur Sinkronisasi Otomatis hanya berjalan saat Anda membuka Admin dari aplikasi lokal laptop (localhost).',
+          text: data.error || 'Gagal melakukan sinkronisasi otomatis ke GitHub/Vercel.',
         });
       }
     } catch (err) {
       setPublishFeedback({
         type: 'error',
-        text: 'Sinkronisasi langsung ke GitHub/Vercel hanya dapat dijalankan dari server lokal laptop (localhost:5173).',
+        text: 'Pastikan aplikasi KARMADI di laptop Anda sedang menyala (localhost:5173 aktif) saat menekan tombol Tayangkan ke Web Online.',
       });
     } finally {
       setIsPublishingOnline(false);
