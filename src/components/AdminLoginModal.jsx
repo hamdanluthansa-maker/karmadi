@@ -19,14 +19,11 @@ export default function AdminLoginModal({ isOpen, onClose }) {
     e.preventDefault();
     setError('');
 
-    // Kredensial yang diizinkan (admin / admin, atau karmadi / karmadi2026, dsb)
-    const validUsers = ['admin', 'karmadi', 'pengelola'];
-    const validPasswords = ['admin', 'admin123', 'karmadi', 'karmadi2026', '123456'];
-
+    // Kredensial resmi pengelola Karmadi
     const u = username.trim().toLowerCase();
     const p = password.trim();
 
-    if (validUsers.includes(u) && validPasswords.includes(p)) {
+    if (u === 'admin' && p === '@Hamdani231090') {
       setIsSuccess(true);
       localStorage.setItem('karmadi_admin_auth', 'true');
       sessionStorage.setItem('karmadi_admin_auth', 'true');
@@ -37,7 +34,7 @@ export default function AdminLoginModal({ isOpen, onClose }) {
         navigate('/admin');
       }, 700);
     } else {
-      setError('Username atau kata sandi tidak cocok. Gunakan kredensial resmi pengelola.');
+      setError('Username atau kata sandi tidak cocok. Akses hanya untuk pengelola resmi Karmadi.');
     }
   };
 
@@ -132,14 +129,6 @@ export default function AdminLoginModal({ isOpen, onClose }) {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-          </div>
-
-          {/* Hint info */}
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
-            <span className="font-semibold text-slate-600">Kredensial Default:</span>
-            <code className="bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700 font-mono text-[10px]">
-              admin / admin
-            </code>
           </div>
 
           <div className="pt-2">
