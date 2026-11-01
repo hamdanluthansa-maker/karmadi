@@ -30,10 +30,12 @@ function jsonStoragePlugin() {
   return {
     name: 'json-storage-plugin',
     configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
+      const apiMiddleware = (req, res, next) => {
+        const origin = req.headers.origin || '*';
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
         res.setHeader('Access-Control-Allow-Private-Network', 'true');
 
         if (req.method === 'OPTIONS') {
@@ -125,7 +127,13 @@ function jsonStoragePlugin() {
         }
 
         next();
-      });
+      };
+
+      if (Array.isArray(server.middlewares.stack)) {
+        server.middlewares.stack.unshift({ route: '', handle: apiMiddleware });
+      } else {
+        server.middlewares.use(apiMiddleware);
+      }
     },
   };
 }
