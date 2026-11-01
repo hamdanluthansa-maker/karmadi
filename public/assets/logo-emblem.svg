@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="emblemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="40%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#1E3A8A" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  
+  <!-- Rounded Squircle Background -->
+  <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#emblemGrad)" filter="url(#shadow)" />
+  
+  <!-- Modern Stylized Dynamic Career Trajectory / Monogram -->
+  <path d="M40 84 L56 65 L70 76 L92 46" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M76 46 H92 V62" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="36" cy="88" r="5.5" fill="#BAE6FD" />
+</svg>
