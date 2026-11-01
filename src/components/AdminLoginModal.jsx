@@ -98,7 +98,7 @@ export default function AdminLoginModal({ isOpen, onClose }) {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Masukkan username (cth: admin)"
+                placeholder="Masukkan username pengelola"
                 className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2B4CE0] text-slate-800 transition-all font-medium"
                 autoFocus
               />
@@ -118,7 +118,7 @@ export default function AdminLoginModal({ isOpen, onClose }) {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Masukkan kata sandi (cth: admin)"
+                placeholder="Masukkan kata sandi rahasia"
                 className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2B4CE0] text-slate-800 transition-all font-medium"
               />
               <button

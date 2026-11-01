@@ -59,18 +59,49 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [isPublishingOnline, setIsPublishingOnline] = useState(false);
+  const [publishFeedback, setPublishFeedback] = useState(null);
+
+  const handlePublishToVercel = async () => {
+    setIsPublishingOnline(true);
+    setPublishFeedback(null);
+    try {
+      const res = await fetch('/api/publish-vercel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobs, updatedAt: Date.now() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPublishFeedback({
+          type: 'success',
+          text: data.message || 'Berhasil dikirim ke GitHub & Vercel! Website online akan terupdate dalam ~30 detik.',
+        });
+      } else {
+        setPublishFeedback({
+          type: 'error',
+          text: data.error || 'Fitur Sinkronisasi Otomatis hanya berjalan saat Anda membuka Admin dari aplikasi lokal laptop (localhost).',
+        });
+      }
+    } catch (err) {
+      setPublishFeedback({
+        type: 'error',
+        text: 'Sinkronisasi langsung ke GitHub/Vercel hanya dapat dijalankan dari server lokal laptop (localhost:5173).',
+      });
+    } finally {
+      setIsPublishingOnline(false);
+    }
+  };
 
   const handleLogin = (e) => {
     e.preventDefault();
     setLoginError('');
-    const validUsers = ['admin', 'karmadi', 'pengelola'];
-    const validPasswords = ['admin', 'admin123', 'karmadi', 'karmadi2026', '123456'];
-    if (validUsers.includes(username.trim().toLowerCase()) && validPasswords.includes(password.trim())) {
+    if (username.trim().toLowerCase() === 'admin' && password.trim() === '@Hamdani231090') {
       localStorage.setItem('karmadi_admin_auth', 'true');
       sessionStorage.setItem('karmadi_admin_auth', 'true');
       setIsAuthenticated(true);
     } else {
-      setLoginError('Username atau kata sandi tidak cocok. Gunakan kredensial resmi.');
+      setLoginError('Username atau kata sandi tidak cocok. Akses hanya untuk pengelola resmi Karmadi.');
     }
   };
 
@@ -112,7 +143,7 @@ export default function AdminPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="Masukkan username pengelola"
                   className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2B4CE0] text-slate-800"
                   autoFocus
                 />
@@ -130,7 +161,7 @@ export default function AdminPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="admin"
+                  placeholder="Masukkan kata sandi rahasia"
                   className="w-full pl-10 pr-10 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2B4CE0] text-slate-800"
                 />
                 <button
@@ -141,11 +172,6 @@ export default function AdminPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-            </div>
-
-            <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 flex items-center justify-between">
-              <span className="font-semibold text-slate-600">Default:</span>
-              <code className="bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-700 font-mono text-[10px]">admin / admin</code>
             </div>
 
             <button
@@ -196,13 +222,24 @@ export default function AdminPage() {
             </div>
 
             {/* Nav kanan */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <button
+                type="button"
+                onClick={handlePublishToVercel}
+                disabled={isPublishingOnline}
+                className="flex items-center gap-1.5 text-xs font-black px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/25 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
+                title="Simpan otomatis ke jobs.json dan tayangkan langsung ke karmadi.vercel.app"
+              >
+                <UploadCloud className="w-3.5 h-3.5 text-[#A3F742]" />
+                <span>{isPublishingOnline ? 'Menayangkan ke Vercel...' : 'Tayangkan ke Web Online'}</span>
+              </button>
+
               <Link
                 to="/"
                 className="flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl bg-[#EEF2FF] text-[#2B4CE0] hover:bg-[#E0E7FF] border border-[#2B4CE0]/30 transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
-                Lihat Beranda Publik
+                <span className="hidden sm:inline">Lihat Beranda Publik</span>
               </Link>
 
               <div className="border-l border-slate-200 pl-4 flex items-center gap-3">
@@ -229,6 +266,25 @@ export default function AdminPage() {
       {/* Main Content Area */}
       <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-6">
+          {publishFeedback && (
+            <div
+              className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between gap-3 ${
+                publishFeedback.type === 'success'
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                  : 'bg-amber-50 border-amber-300 text-amber-900'
+              }`}
+            >
+              <span>{publishFeedback.text}</span>
+              <button
+                type="button"
+                onClick={() => setPublishFeedback(null)}
+                className="text-slate-500 hover:text-slate-800 font-bold px-2 py-0.5 rounded cursor-pointer"
+              >
+                Tutup
+              </button>
+            </div>
+          )}
+
           {/* Quick Metrics Asli Berdasarkan Data Lowongan */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">

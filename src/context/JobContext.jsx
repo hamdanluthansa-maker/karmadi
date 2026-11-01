@@ -1,107 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { detectWilayah } from '../utils/regionUtils';
 import { getTodayDateString, addMonths, isJobActive } from '../utils/dateUtils';
+import bundledJobsData from '../../data/jobs.json';
 
 const STORAGE_KEY = 'karmadi_jobs';
 const LEGACY_STORAGE_KEY = 'sicaker_jobs';
 const TIME_KEY = 'karmadi_jobs_time';
 
-// Database lowongan kerja aktif Karmadi
-const INITIAL_JOBS = [
-  {
-    id: 1730460000001,
-    posisi: 'Jaga Stand Event kuliner',
-    nama_perusahaan: 'Mitra Usaha Madiun',
-    kategori: 'F&B',
-    tipe: 'Freelance',
-    wilayah: 'Kota Madiun',
-    lokasi: 'Kota Madiun, Karesidenan Madiun',
-    syarat: [
-      'Pria/Wanita',
-      'Min SMA',
-      'Min usia 20-30th',
-      'Jujur, cekatan & tanggung jawab',
-      'Jika berminat silahkan hubungi',
-      'WA 082 3333 43610',
-    ],
-    catatan: 'mulai tgl 2025 9 DES 2025 - 4 JANUARI 2026\nmahasiswa semester akhir atau baru lulus kuliah diperbolehkan',
-    kontak_wa: '082333343610',
-    email: '',
-    link_pendaftaran: '',
-    is_walk_in: false,
-    alamat_walk_in: '',
-    warna_primer: '#7C3AED',
-    is_urgent: false,
-    tanggal_mulai: '2026-11-01',
-    tanggal_selesai: '2026-12-01',
-    tanggal: '2026-11-01',
-    is_manual: true,
-    poster_url: '',
-  },
-  {
-    id: 1730460000002,
-    posisi: 'Tenaga Teknis Kefarmasian',
-    nama_perusahaan: 'Apotek Mecca',
-    kategori: 'Kesehatan',
-    tipe: 'Full Time',
-    wilayah: 'Ponorogo',
-    lokasi: 'Area Pasar Slahung, Ponorogo',
-    syarat: [
-      'Pendidikan minimal D3/S1 Farmasi / Tenaga Teknis Kefarmasian',
-      'Memiliki STRTTK aktif lebih disukai',
-      'Jujur, teliti, disiplin, dan bertanggung jawab',
-      'Mampu melayani pasien dan meracik obat dengan baik',
-      'Penempatan: Apotek Mecca, Area Pasar Slahung, Ponorogo',
-    ],
-    catatan: 'Lamaran wajib datang langsung / walk-in interview / kirim berkas fisik ke Apotek Mecca',
-    kontak_wa: '6285179849167',
-    email: '',
-    link_pendaftaran: 'https://wa.me/6285179849167',
-    is_walk_in: true,
-    alamat_walk_in: 'Area Pasar Slahung, Ponorogo',
-    warna_primer: '#003366',
-    is_urgent: false,
-    tanggal_mulai: '2026-11-01',
-    tanggal_selesai: '2026-12-01',
-    tanggal: '2026-11-01',
-    is_manual: true,
-    poster_url: '',
-  },
-  {
-    id: 1730460000003,
-    posisi: 'Tenaga Packing Online Shop',
-    nama_perusahaan: 'Online Shop Madiun',
-    kategori: 'Gudang',
-    tipe: 'Freelance',
-    wilayah: 'Kota Madiun',
-    lokasi: 'Kota Madiun',
-    syarat: [
-      'Laki-laki / Perempuan',
-      'Tekun, rajin, dan niat kerja',
-      'Wajib TIDAK merokok',
-      'SIAP lembur',
-      'Punya pengalaman packing lebih disukai, jika tidak punya pengalaman akan diajari',
-    ],
-    benefit: [
-      'Gaji Rp 145.000 per hari',
-      'Ada uang lembur dan makan (jika lembur)',
-      'Tidak ada mess'
-    ],
-    catatan: 'Dalam 1 minggu mungkin hanya dipanggil 2-3 hari (atau jika packingan lagi banyak)\nJam kerja: 09:00 - 17:00 (istirahat siang satu jam)\nSelama iklan masih ada, berarti lowongan masih dibuka.',
-    kontak_wa: '6282331433496',
-    email: '',
-    link_pendaftaran: '',
-    is_walk_in: false,
-    alamat_walk_in: '',
-    warna_primer: '#7C3AED',
-    is_urgent: true,
-    tanggal_mulai: '2026-11-01',
-    tanggal_selesai: '2026-12-01',
-    tanggal: '2026-11-01',
-    is_manual: true,
-    poster_url: '',
-  },
-];
+// Database lowongan kerja aktif Karmadi (Terhubung otomatis ke data/jobs.json)
+const INITIAL_JOBS = Array.isArray(bundledJobsData?.jobs) ? bundledJobsData.jobs : [];
+const BUNDLED_UPDATED_AT = Number(bundledJobsData?.updatedAt || 0);
 
 /**
  * Memperbaiki poster_url yang rusak akibat URL blob yang kadaluarsa saat reload
@@ -152,53 +60,53 @@ function repairPosterUrl(job) {
   return current;
 }
 
+function normalizeJobList(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((job) => {
+    const start = job.tanggal_mulai || job.tanggal || getTodayDateString();
+    const end = job.tanggal_selesai || addMonths(start, 1);
+    return {
+      ...job,
+      poster_url: repairPosterUrl(job),
+      wilayah: job.wilayah || detectWilayah(job.lokasi, job.syarat),
+      tanggal_mulai: start,
+      tanggal_selesai: end,
+      tanggal: start,
+    };
+  });
+}
+
 function loadJobsFromStorage() {
   try {
+    const localTime = Number(localStorage.getItem(TIME_KEY) || 0);
+    // Jika versi data/jobs.json dari server/deploy lebih baru daripada cache browser, gunakan data terbaru dari bundel
+    if (BUNDLED_UPDATED_AT > localTime) {
+      const normalized = normalizeJobList(INITIAL_JOBS);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      localStorage.setItem(TIME_KEY, String(BUNDLED_UPDATED_AT));
+      return normalized;
+    }
+
     const stored = localStorage.getItem(STORAGE_KEY);
-    // Jika data pernah disimpan oleh admin (bahkan jika array kosong []), hormati data pengguna!
     if (stored !== null) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
-        return parsed.map((job) => {
-          const start = job.tanggal_mulai || job.tanggal || getTodayDateString();
-          const end = job.tanggal_selesai || addMonths(start, 1);
-          return {
-            ...job,
-            poster_url: repairPosterUrl(job),
-            wilayah: job.wilayah || detectWilayah(job.lokasi, job.syarat),
-            tanggal_mulai: start,
-            tanggal_selesai: end,
-            tanggal: start,
-          };
-        });
+        return normalizeJobList(parsed);
       }
     }
 
-    // Cek legacy storage jika ada
     const legacyStored = localStorage.getItem(LEGACY_STORAGE_KEY);
     if (legacyStored !== null) {
       const parsed = JSON.parse(legacyStored);
       if (Array.isArray(parsed)) {
-        return parsed.map((job) => {
-          const start = job.tanggal_mulai || job.tanggal || getTodayDateString();
-          const end = job.tanggal_selesai || addMonths(start, 1);
-          return {
-            ...job,
-            poster_url: repairPosterUrl(job),
-            wilayah: job.wilayah || detectWilayah(job.lokasi, job.syarat),
-            tanggal_mulai: start,
-            tanggal_selesai: end,
-            tanggal: start,
-          };
-        });
+        return normalizeJobList(parsed);
       }
     }
   } catch (e) {
     console.warn('Gagal membaca data loker dari localStorage:', e);
   }
 
-  // Hanya jika benar-benar pertama kali dibuka dan localStorage belum pernah disetel (null)
-  return INITIAL_JOBS;
+  return normalizeJobList(INITIAL_JOBS);
 }
 
 const JobContext = createContext(undefined);
@@ -206,49 +114,46 @@ const JobContext = createContext(undefined);
 export function JobProvider({ children }) {
   const [jobs, setJobs] = useState(loadJobsFromStorage);
   const isInitialSyncDone = useRef(false);
-  const lastSyncTimestamp = useRef(0);
+  const lastSyncTimestamp = useRef(Number(localStorage.getItem(TIME_KEY) || BUNDLED_UPDATED_AT || 0));
   const isReceivingFromServer = useRef(false);
 
-  // 1. Sinkronisasi dua arah real-time antara PC & HP lewat Backend Server
+  // 1. Sinkronisasi dua arah real-time antara PC (localhost /api/jobs) & Web Publik (/jobs.json)
   useEffect(() => {
     let isMounted = true;
 
     async function syncWithServer() {
       try {
-        const res = await fetch('/api/jobs');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!isMounted) return;
+        let data = null;
+        const isLocalDev =
+          typeof window !== 'undefined' &&
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
-        const serverTime = data.updatedAt || 0;
-        const serverJobs = data.jobs;
-        const hasLocalCustomData = localStorage.getItem(STORAGE_KEY) !== null;
-
-        if (Array.isArray(serverJobs)) {
-          // Jika server sudah memiliki data tersimpan dan lebih baru dari sync terakhir
-          if (serverTime > lastSyncTimestamp.current) {
-            lastSyncTimestamp.current = serverTime;
-            const cleaned = serverJobs.map((j) => ({
-              ...j,
-              poster_url: repairPosterUrl(j),
-            }));
-            isReceivingFromServer.current = true;
-            setJobs(cleaned);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
-            localStorage.setItem(TIME_KEY, String(serverTime));
+        if (isLocalDev) {
+          const res = await fetch('/api/jobs');
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            data = await res.json();
           }
-        } else if (serverJobs === null && hasLocalCustomData) {
-          // Server baru dihidupkan, dan browser ini (misal di PC) memiliki data tersimpan:
-          // Unggah data lokal browser ini ke server agar HP langsung tersinkronkan
-          const currentLocal = loadJobsFromStorage();
-          const now = Date.now();
-          lastSyncTimestamp.current = now;
-          localStorage.setItem(TIME_KEY, String(now));
-          await fetch('/api/jobs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jobs: currentLocal, updatedAt: now }),
-          });
+        } else {
+          const res = await fetch(`/jobs.json?t=${Date.now()}`, { cache: 'no-store' });
+          const contentType = res.headers.get('content-type') || '';
+          if (res.ok && contentType.includes('application/json')) {
+            data = await res.json();
+          }
+        }
+
+        if (!isMounted || !data) return;
+
+        const serverTime = Number(data.updatedAt || 0);
+        const serverJobs = data.jobs;
+
+        if (Array.isArray(serverJobs) && serverTime > lastSyncTimestamp.current) {
+          lastSyncTimestamp.current = serverTime;
+          const cleaned = normalizeJobList(serverJobs);
+          isReceivingFromServer.current = true;
+          setJobs(cleaned);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+          localStorage.setItem(TIME_KEY, String(serverTime));
         }
       } catch (err) {
         // Fallback hening jika server offline
