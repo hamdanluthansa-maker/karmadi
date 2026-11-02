@@ -299,8 +299,13 @@ export function JobProvider({ children }) {
     setJobs(INITIAL_JOBS);
   };
 
+  const replaceJobs = (newJobList) => {
+    if (!Array.isArray(newJobList)) return;
+    setJobs(normalizeJobList(newJobList));
+  };
+
   return (
-    <JobContext.Provider value={{ jobs, publishJob, publishJobs, updateJob, deleteJob, deleteAllJobs, resetJobs, deleteExpiredJobs }}>
+    <JobContext.Provider value={{ jobs, publishJob, publishJobs, updateJob, deleteJob, deleteAllJobs, resetJobs, deleteExpiredJobs, replaceJobs }}>
       {children}
     </JobContext.Provider>
   );

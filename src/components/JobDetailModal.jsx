@@ -302,6 +302,8 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
                 <img
                   src={job.poster_url}
                   alt={`Poster ${job.posisi}`}
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => {
                     e.currentTarget.onerror = null;
                     e.currentTarget.style.display = 'none';

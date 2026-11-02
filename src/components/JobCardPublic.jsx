@@ -105,6 +105,8 @@ export default function JobCardPublic({
             <img
               src={poster_url}
               alt={`Poster loker ${posisi}`}
+              loading="lazy"
+              decoding="async"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.style.display = 'none';

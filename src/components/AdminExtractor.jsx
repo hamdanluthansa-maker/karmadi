@@ -36,8 +36,11 @@ import {
   Share2,
   Copy,
   QrCode,
-  ScanLine
+  ScanLine,
+  Cloud
 } from 'lucide-react';
+import CloudinarySettingsModal from './CloudinarySettingsModal';
+import { isCloudinaryConfigured } from '../services/cloudinaryService';
 import JobCard from './JobCard';
 import RecruiterWaVerifier from './RecruiterWaVerifier';
 import { useJobs } from '../context/JobContext';
@@ -70,6 +73,7 @@ export default function AdminExtractor() {
   const [notification, setNotification] = useState(null);
   const [lastPublishedJobs, setLastPublishedJobs] = useState([]);
   const [isCopiedWaText, setIsCopiedWaText] = useState(false);
+  const [isCloudinaryModalOpen, setIsCloudinaryModalOpen] = useState(false);
 
   // Link Saluran Resmi WhatsApp Karmadi
   const KARMADI_WA_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb93m90F6sn4i0hag42j';
@@ -497,6 +501,21 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
               <Bot className="w-3.5 h-3.5 text-blue-600" />
               <span>AI Multi-Poster & Multi-Job Engine</span>
             </div>
+
+            {/* Cloudinary Cloud Storage Switcher */}
+            <button
+              type="button"
+              onClick={() => setIsCloudinaryModalOpen(true)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all border shadow-xs cursor-pointer ${
+                isCloudinaryConfigured()
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                  : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+              }`}
+              title="Penyimpanan Gambar Cloudinary (Bikin web selalu enteng)"
+            >
+              <Cloud className={`w-3.5 h-3.5 ${isCloudinaryConfigured() ? 'text-emerald-600' : 'text-amber-600'}`} />
+              <span>{isCloudinaryConfigured() ? 'Cloud Storage: Aktif' : 'Cloud Storage: Belum Aktif (Hemat 9MB)'}</span>
+            </button>
 
             {/* AI Engine Status & Gemini Key Switcher */}
             <button
@@ -1984,6 +2003,11 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
       {/* ========================================================= */}
       {/* MODAL PENGATURAN GOOGLE GEMINI VISION API                */}
       {/* ========================================================= */}
+      <CloudinarySettingsModal
+        isOpen={isCloudinaryModalOpen}
+        onClose={() => setIsCloudinaryModalOpen(false)}
+      />
+
       {isKeyModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 relative">
