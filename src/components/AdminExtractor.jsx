@@ -37,6 +37,7 @@ import {
   Copy
 } from 'lucide-react';
 import JobCard from './JobCard';
+import RecruiterWaVerifier from './RecruiterWaVerifier';
 import { useJobs } from '../context/JobContext';
 import { extractJobsFromImage, extractJobsFromMultipleImages } from '../services/aiExtractorService';
 import { extractJobFromRawText } from '../services/textJobParser';
@@ -948,6 +949,16 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                       className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 bg-white"
                     />
                   </div>
+
+                  {/* Alat Verifikasi Nomor WhatsApp Perekrut */}
+                  <div className="sm:col-span-2">
+                    <RecruiterWaVerifier
+                      phone={manualJob.kontak_wa}
+                      jobData={manualJob}
+                      isVerified={Boolean(manualJob.is_verified)}
+                      onVerifyChange={(val) => handleManualJobChange('is_verified', val)}
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -1603,6 +1614,13 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                       onChange={(e) => handleUpdateCurrentJobField('kontak_wa', e.target.value)}
                       placeholder="6281234567890"
                       className="w-full px-3 py-2 rounded-lg border border-slate-300 font-mono text-xs focus:ring-2 focus:ring-emerald-500"
+                    />
+                    {/* Alat Verifikasi Nomor WhatsApp Perekrut */}
+                    <RecruiterWaVerifier
+                      phone={currentJob.kontak_wa}
+                      jobData={currentJob}
+                      isVerified={Boolean(currentJob.is_verified)}
+                      onVerifyChange={(val) => handleUpdateCurrentJobField('is_verified', val)}
                     />
                   </div>
                 </div>
