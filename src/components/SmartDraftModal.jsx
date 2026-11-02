@@ -21,6 +21,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { generateCoverLetterPdf } from '../utils/pdfGenerator';
+import { trackJobApply } from '../services/analyticsService';
 
 /**
  * SmartDraftModal — Asisten Pembuat Draf Lamaran Cepat & Auto-Kirim Terkonfirmasi
@@ -205,6 +206,7 @@ Hormat saya,
   // Handler Konfirmasi Kirim WhatsApp
   const handleConfirmSendWa = () => {
     if (!cleanPhone) return;
+    trackJobApply(job, 'whatsapp');
     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waDraft)}`;
     window.open(url, '_blank');
   };
@@ -212,6 +214,7 @@ Hormat saya,
   // Handler Konfirmasi Kirim Email
   const handleConfirmSendEmail = () => {
     if (!job.email) return;
+    trackJobApply(job, 'email');
     const url = `mailto:${job.email}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailDraft)}`;
     window.location.href = url;
   };

@@ -27,6 +27,7 @@ import SmartDraftModal from './SmartDraftModal';
 import { detectWilayah } from '../utils/regionUtils';
 import { getJobShareUrl, formatJobTeaserShareText } from '../utils/shareUtils';
 import { getJobExpiryStatus, formatDateIndo } from '../utils/dateUtils';
+import { trackJobShare, trackJobApply } from '../services/analyticsService';
 
 /**
  * Modal Detail Pekerjaan saat kartu diklik
@@ -111,6 +112,7 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
     : [];
 
   const handleShare = async () => {
+    trackJobShare(job);
     const shareUrl = getJobShareUrl(job);
     const teaserText = formatJobTeaserShareText(job);
 
@@ -449,6 +451,7 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
               href={job.link_pendaftaran}
               target="_blank"
               rel="noreferrer"
+              onClick={() => trackJobApply(job, 'form')}
               className="w-full py-2.5 sm:py-3 rounded-xl text-white font-black text-xs sm:text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-600/25 transition-all flex items-center justify-center gap-2 text-center cursor-pointer"
             >
               <ExternalLink className="w-4 h-4 text-[#A3F742]" />
@@ -474,6 +477,7 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
                   href={waUrl}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackJobApply(job, 'whatsapp')}
                   className="py-2 px-3 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                 >
                   <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -492,6 +496,7 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
               {job.email ? (
                 <a
                   href={emailUrl}
+                  onClick={() => trackJobApply(job, 'email')}
                   className="py-2 px-3 rounded-xl text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-300 flex items-center justify-center gap-1.5 transition-colors shadow-2xs"
                 >
                   <Mail className="w-3.5 h-3.5 text-blue-600 shrink-0" />

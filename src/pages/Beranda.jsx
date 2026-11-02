@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
+import { trackPageVisit, trackJobView, trackRegionFilter } from '../services/analyticsService';
 import JobCardPublic from '../components/JobCardPublic';
 import JobDetailModal from '../components/JobDetailModal';
 import AdminLoginModal from '../components/AdminLoginModal';
@@ -88,6 +89,11 @@ export default function Beranda() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Catat kunjungan halaman beranda sekali saat dimuat
+  useEffect(() => {
+    trackPageVisit();
+  }, []);
+
   // Auto-open modal jika URL memuat parameter loker (?loker=... atau ?q=...)
   useEffect(() => {
     const targetLokerId = searchParams.get('loker');
@@ -97,6 +103,7 @@ export default function Beranda() {
       const found = jobs.find((j) => String(j.id) === String(targetLokerId));
       if (found) {
         setSelectedJob(found);
+        trackJobView(found);
         return;
       }
     }
@@ -474,7 +481,11 @@ export default function Beranda() {
                 return (
                   <button
                     key={opt.id}
-                    onClick={() => setActiveWilayah(isActive ? '' : opt.value)}
+                    onClick={() => {
+                      const nextWil = isActive ? '' : opt.value;
+                      setActiveWilayah(nextWil);
+                      if (nextWil) trackRegionFilter(nextWil);
+                    }}
                     className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-200 border cursor-pointer shrink-0 ${
                       isActive
                         ? 'bg-[#2B4CE0] text-white border-[#2B4CE0] shadow-md shadow-[#2B4CE0]/25 scale-[1.02]'
@@ -527,7 +538,10 @@ export default function Beranda() {
                   catatan={job.catatan}
                   is_manual={job.is_manual}
                   is_urgent={Boolean(job.is_urgent)}
-                  onCardClick={() => setSelectedJob(job)}
+                  onCardClick={() => {
+                    setSelectedJob(job);
+                    trackJobView(job);
+                  }}
                 />
               ))}
             </div>

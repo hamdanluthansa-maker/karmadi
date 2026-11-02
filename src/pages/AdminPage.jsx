@@ -15,10 +15,12 @@ import {
   ShieldCheck,
   Zap,
   Clock,
+  BarChart3,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminExtractor from '../components/AdminExtractor';
 import AdminJobList from '../components/AdminJobList';
+import AdminAnalyticsDashboard from '../components/AdminAnalyticsDashboard';
 import { useJobs } from '../context/JobContext';
 import { 
   verifyAdminCredentials, 
@@ -341,37 +343,51 @@ export default function AdminPage() {
           </div>
 
           {/* Tab Navigation Menu Admin */}
-          <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-2 max-w-md">
+          <div className="bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap sm:flex-nowrap items-center gap-2 max-w-2xl">
             <button
               onClick={() => setActiveTab('upload')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'upload'
                   ? 'bg-[#2B4CE0] text-white shadow-sm shadow-[#2B4CE0]/30'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <UploadCloud className="w-4 h-4" />
+              <UploadCloud className="w-4 h-4 shrink-0" />
               <span>Upload & Ekstraksi AI</span>
             </button>
 
             <button
               onClick={() => setActiveTab('list')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'list'
                   ? 'bg-[#2B4CE0] text-white shadow-sm shadow-[#2B4CE0]/30'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
               }`}
             >
-              <ListFilter className="w-4 h-4" />
+              <ListFilter className="w-4 h-4 shrink-0" />
               <span>Kelola Lowongan ({jobs.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === 'analytics'
+                  ? 'bg-[#2B4CE0] text-white shadow-sm shadow-[#2B4CE0]/30'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 shrink-0" />
+              <span>Analisa Pengunjung</span>
             </button>
           </div>
 
           {/* Tab Content */}
           {activeTab === 'upload' ? (
             <AdminExtractor />
-          ) : (
+          ) : activeTab === 'list' ? (
             <AdminJobList onSwitchToUpload={() => setActiveTab('upload')} />
+          ) : (
+            <AdminAnalyticsDashboard />
           )}
         </div>
       </main>

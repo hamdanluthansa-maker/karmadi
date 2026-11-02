@@ -16,6 +16,7 @@ function jsonStoragePlugin() {
   const publicJobsFile = path.resolve(publicDir, 'jobs.json');
   const privateDataDir = path.resolve(__dirname, '.data');
   const aiConfigFile = path.resolve(privateDataDir, 'ai-config.json');
+  const analyticsFile = path.resolve(privateDataDir, 'analytics.json');
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
@@ -127,6 +128,41 @@ function jsonStoragePlugin() {
                 updatedAt: Date.now(),
               };
               fs.writeFileSync(aiConfigFile, JSON.stringify(nextConfig, null, 2), 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: true }));
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (req.url === '/api/analytics' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          if (fs.existsSync(analyticsFile)) {
+            try {
+              const content = fs.readFileSync(analyticsFile, 'utf-8');
+              res.end(content || JSON.stringify({ totalPageViews: 0 }));
+              return;
+            } catch {
+              res.end(JSON.stringify({ totalPageViews: 0 }));
+              return;
+            }
+          }
+          res.end(JSON.stringify({ totalPageViews: 0 }));
+          return;
+        }
+
+        if (req.url === '/api/analytics' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => {
+            body += chunk;
+          });
+          req.on('end', () => {
+            try {
+              const parsed = body ? JSON.parse(body) : {};
+              fs.writeFileSync(analyticsFile, JSON.stringify(parsed, null, 2), 'utf-8');
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ success: true }));
             } catch (err) {
