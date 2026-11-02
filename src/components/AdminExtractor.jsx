@@ -34,12 +34,16 @@ import {
   Trash2,
   Mail,
   Share2,
-  Copy
+  Copy,
+  QrCode,
+  ScanLine
 } from 'lucide-react';
 import JobCard from './JobCard';
 import RecruiterWaVerifier from './RecruiterWaVerifier';
 import { useJobs } from '../context/JobContext';
 import { extractJobsFromImage, extractJobsFromMultipleImages } from '../services/aiExtractorService';
+import { scanQrAndBarcodeFromImage } from '../utils/qrBarcodeScanner';
+import { fileToPersistentDataUrl } from '../utils/fileUtils';
 import { extractJobFromRawText } from '../services/textJobParser';
 import { formatBatchJobsTeaserText, formatJobTeaserShareText } from '../utils/shareUtils';
 import { getTodayDateString, addMonths, addDays, formatDateIndo } from '../utils/dateUtils';
@@ -318,26 +322,83 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
 
     try {
       if (validImages.length === 1) {
-        setLoadingText('AI sedang membaca dan membedah posisi dalam poster...');
+        setLoadingText('AI sedang membaca poster & memindai barcode formulir...');
         const jobs = await extractJobsFromImage(validImages[0], (msg) => setLoadingText(msg));
         setExtractedJobs(jobs);
 
+        const qrFoundJob = jobs.find((j) => j.qr_detected && (j.link_pendaftaran || j.qr_raw_value));
+        const qrInfo = qrFoundJob
+          ? ` • 🎯 Barcode Formulir Terbaca Otomatis: ${qrFoundJob.link_pendaftaran || qrFoundJob.qr_raw_value}`
+          : '';
+
         if (jobs.length > 1) {
-          showToast(`Luar biasa! Terdeteksi ${jobs.length} posisi sekaligus dalam 1 gambar: ${jobs.map(j => j.posisi).join(' & ')}!`);
+          showToast(`Luar biasa! Terdeteksi ${jobs.length} posisi sekaligus: ${jobs.map(j => j.posisi).join(' & ')}${qrInfo}!`);
         } else {
-          showToast(`Data "${jobs[0]?.posisi}" berhasil diekstrak!`);
+          showToast(`Data "${jobs[0]?.posisi}" berhasil diekstrak${qrInfo}!`);
         }
       } else {
-        setLoadingText(`AI sedang memproses ${validImages.length} poster secara batch...`);
+        setLoadingText(`AI sedang memproses ${validImages.length} poster & barcode secara batch...`);
         const jobs = await extractJobsFromMultipleImages(validImages, (msg) => setLoadingText(msg));
         setExtractedJobs(jobs);
-        showToast(`Berhasil mengekstrak ${jobs.length} lowongan dari ${validImages.length} poster!`);
+        const qrCount = jobs.filter((j) => j.qr_detected).length;
+        const qrNote = qrCount > 0 ? ` (${qrCount} barcode formulir berhasil dibaca otomatis)` : '';
+        showToast(`Berhasil mengekstrak ${jobs.length} lowongan dari ${validImages.length} poster${qrNote}!`);
       }
     } catch (err) {
       console.error('Error saat ekstraksi batch AI:', err);
       showToast(`Gagal memproses gambar: ${err.message || 'Format gambar tidak terbaca'}`, 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /**
+   * Memindai Barcode / QR Code secara langsung dari file gambar atau poster aktif
+   * lalu memasukkannya otomatis ke kolom Link Formulir Pendaftaran
+   */
+  const [isScanningQr, setIsScanningQr] = useState(false);
+
+  const handleScanQrToLink = async (sourceFileOrUrl, targetMode = 'extracted') => {
+    if (!sourceFileOrUrl) {
+      showToast('Tidak ada gambar untuk dipindai barcodenya.', 'error');
+      return;
+    }
+    setIsScanningQr(true);
+    try {
+      const dataUrl =
+        typeof sourceFileOrUrl === 'string'
+          ? sourceFileOrUrl
+          : await fileToPersistentDataUrl(sourceFileOrUrl);
+
+      const res = await scanQrAndBarcodeFromImage(dataUrl);
+      if (res && res.found && (res.url || res.rawValue)) {
+        const finalUrl = res.url || res.rawValue;
+        if (targetMode === 'manual') {
+          handleManualJobChange('link_pendaftaran', finalUrl);
+          if (res.isWhatsAppUrl && res.waNumber && !manualJob.kontak_wa) {
+            handleManualJobChange('kontak_wa', res.waNumber);
+          }
+        } else {
+          handleUpdateCurrentJobField('link_pendaftaran', finalUrl);
+          handleUpdateCurrentJobField('qr_detected', true);
+          handleUpdateCurrentJobField('qr_raw_value', finalUrl);
+          handleUpdateCurrentJobField('qr_region', res.region);
+          if (res.isWhatsAppUrl && res.waNumber && !currentJob?.kontak_wa) {
+            handleUpdateCurrentJobField('kontak_wa', res.waNumber);
+          }
+        }
+        showToast(`🎯 Barcode berhasil dibaca (${res.region}): ${finalUrl}`, 'success');
+      } else {
+        showToast(
+          'Barcode/QR tidak terbaca. Jika ukuran QR sangat kecil atau buram, silakan crop/potong bagian QR saja lalu klik "Scan Gambar Barcode".',
+          'error'
+        );
+      }
+    } catch (err) {
+      console.error('Gagal scan QR:', err);
+      showToast('Gagal membaca barcode dari gambar tersebut.', 'error');
+    } finally {
+      setIsScanningQr(false);
     }
   };
 
@@ -962,12 +1023,28 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                 </div>
 
                 <div>
-                  <label className="block text-slate-500 font-semibold mb-0.5 flex items-center gap-1">
-                    <Globe className="w-3 h-3 text-[#2B4CE0]" /> Link Formulir Pendaftaran Online (Opsional)
-                  </label>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+                    <label className="text-slate-500 font-semibold flex items-center gap-1">
+                      <Globe className="w-3 h-3 text-[#2B4CE0]" /> Link Formulir Pendaftaran Online (Opsional)
+                    </label>
+                    <label className="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#2B4CE0] border border-blue-200 text-[10px] font-extrabold flex items-center gap-1 cursor-pointer transition shadow-2xs">
+                      <QrCode className="w-3 h-3" />
+                      <span>{isScanningQr ? 'Memindai...' : 'Scan Gambar Barcode'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleScanQrToLink(file, 'manual');
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
                   <input
                     type="url"
-                    placeholder="Contoh: https://forms.gle/xyz atau link karir perusahaan"
+                    placeholder="Contoh: https://forms.gle/xyz (atau otomatis dari Scan Barcode)"
                     value={manualJob.link_pendaftaran}
                     onChange={(e) => handleManualJobChange('link_pendaftaran', e.target.value)}
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-slate-800 bg-white"
@@ -1637,17 +1714,72 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                 </div>
 
                 <div>
-                  <label className="block text-slate-600 font-bold mb-1 flex items-center gap-1">
-                    <Globe className="w-3.5 h-3.5 text-slate-400" />
-                    Link Pendaftaran / Formulir Online (bit.ly / Google Form / Web)
-                  </label>
+                  <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+                    <label className="text-slate-600 font-bold flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Link Pendaftaran / Formulir Online (bit.ly / Google Form / Barcode)</span>
+                    </label>
+
+                    <div className="flex items-center gap-1.5">
+                      {currentJob.poster_url && (
+                        <button
+                          type="button"
+                          disabled={isScanningQr}
+                          onClick={() => handleScanQrToLink(currentJob.poster_url, 'extracted')}
+                          className="px-2 py-0.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#2B4CE0] border border-blue-200 text-[10px] font-extrabold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                          title="Pindai ulang QR Code / Barcode yang ada di poster ini"
+                        >
+                          <ScanLine className="w-3 h-3" />
+                          <span>{isScanningQr ? 'Memindai...' : 'Scan Barcode Poster'}</span>
+                        </button>
+                      )}
+
+                      <label
+                        className="px-2 py-0.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                        title="Unggah potongan (crop) gambar QR Code jika ukuran di poster terlalu kecil"
+                      >
+                        <QrCode className="w-3 h-3" />
+                        <span>Upload Crop QR</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleScanQrToLink(file, 'extracted');
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
                   <input
                     type="url"
                     value={currentJob.link_pendaftaran || ''}
                     onChange={(e) => handleUpdateCurrentJobField('link_pendaftaran', e.target.value)}
-                    placeholder="https://bit.ly/... atau https://forms.gle/..."
+                    placeholder="https://bit.ly/... atau otomatis terisi dari Barcode Poster"
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-blue-500"
                   />
+
+                  {currentJob.qr_detected && (
+                    <div className="mt-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-900 flex items-center justify-between gap-2">
+                      <span className="font-bold flex items-center gap-1.5">
+                        <QrCode className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>
+                          Barcode Formulir Terbaca Otomatis ({currentJob.qr_region || 'QR Poster'}):{' '}
+                          <a
+                            href={currentJob.link_pendaftaran || currentJob.qr_raw_value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline text-[#2B4CE0] font-extrabold"
+                          >
+                            {currentJob.link_pendaftaran || currentJob.qr_raw_value}
+                          </a>
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Pengaturan Walk-In / Datang Langsung */}

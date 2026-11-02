@@ -3,6 +3,50 @@ import { extractDominantColor, parsePosterText } from '../utils/imageExtractor';
 import { fileToPersistentDataUrl } from '../utils/fileUtils';
 import { getGeminiApiKey, extractWithGeminiVision, syncAiConfigFromLocalServer } from './geminiService';
 import { detectWilayah } from '../utils/regionUtils';
+import { scanQrAndBarcodeFromImage } from '../utils/qrBarcodeScanner';
+
+/**
+ * Menyuntikkan hasil pembacaan QR Code / Barcode ke dalam objek loker hasil ekstraksi.
+ * Jika poster memuat barcode formulir pendaftaran tetapi tidak mencantumkan link teks,
+ * maka hasil scan barcode otomatis dijadikan link_pendaftaran.
+ */
+function enrichJobsWithQrResult(jobs, qrResult) {
+  if (!Array.isArray(jobs) || !qrResult || !qrResult.found) {
+    return jobs;
+  }
+
+  return jobs.map((job) => {
+    const updated = { ...job };
+
+    // Jika QR code mengarah ke nomor WhatsApp (wa.me/...) dan kontak_wa masih kosong
+    if (qrResult.isWhatsAppUrl && qrResult.waNumber) {
+      if (!updated.kontak_wa || !updated.kontak_wa.trim()) {
+        updated.kontak_wa = qrResult.waNumber;
+        updated.qr_detected = true;
+        updated.qr_raw_value = qrResult.url || qrResult.rawValue;
+        updated.qr_region = qrResult.region;
+      }
+    }
+    // Jika QR code berisi URL Formulir / Pendaftaran (Google Forms, bit.ly, s.id, web karir, dll)
+    else if (qrResult.url) {
+      // Gunakan URL dari QR Code jika link_pendaftaran kosong, ATAU jika link dari AI tampak tidak valid/halusinasi
+      const existingLink = (updated.link_pendaftaran || '').trim();
+      if (!existingLink || existingLink.length < 10) {
+        updated.link_pendaftaran = qrResult.url;
+        updated.qr_detected = true;
+        updated.qr_raw_value = qrResult.url;
+        updated.qr_region = qrResult.region;
+      } else {
+        // Tetap simpan metadata bahwa QR juga terdeteksi
+        updated.qr_detected = true;
+        updated.qr_raw_value = qrResult.url;
+        updated.qr_region = qrResult.region;
+      }
+    }
+
+    return updated;
+  });
+}
 
 // Cache worker OCR agar proses multiple gambar tidak perlu re-load engine berkali-kali
 let sharedWorker = null;
@@ -25,7 +69,7 @@ async function getSharedOcrWorker(onProgress) {
 }
 
 /**
- * Service ekstraksi AI poster loker
+ * Service ekstraksi AI poster loker + Pemindai Otomatis QR Code / Barcode Formulir Pendaftaran
  * Mendukung deteksi multi-loker dan selalu mengembalikan Array of Jobs: Job[]
  * Memprioritaskan Google Gemini Multimodal Vision AI jika API Key tersedia.
  */
@@ -34,6 +78,28 @@ export async function extractJobsFromImage(imageFileOrUrl, onProgress, filename 
 
   // 1. Simpan Data URL permanen untuk tampilan & localStorage (tidak akan mati saat reload)
   const imageUrl = await fileToPersistentDataUrl(imageFileOrUrl);
+
+  // 2. Jalankan pemindaian QR Code / Barcode secara paralel (Multi-Pass Region Scanner)
+  const qrScanPromise = scanQrAndBarcodeFromImage(imageUrl).catch((err) => {
+    console.warn('Pemindaian QR/Barcode dilewati:', err);
+    return { found: false };
+  });
+
+  // 3. Jalankan ekstraksi konten loker (Vision AI / OCR)
+  const rawJobs = await extractJobsFromImageInternal(
+    imageUrl,
+    imageFileOrUrl,
+    onProgress,
+    fileName,
+    captionText
+  );
+
+  // 4. Gabungkan hasil scan QR Code / Barcode ke dalam link_pendaftaran loker
+  const qrResult = await qrScanPromise;
+  return enrichJobsWithQrResult(rawJobs, qrResult);
+}
+
+async function extractJobsFromImageInternal(imageUrl, imageFileOrUrl, onProgress, fileName = '', captionText = '') {
 
   // Helper lazy OCR (hanya dijalankan jika dibutuhkan oleh Hybrid Groq 70B atau Local Fallback)
   let cachedOcrData = null;
