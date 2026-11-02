@@ -130,13 +130,13 @@ export default function JobCardPublic({
             <div
               className={`absolute top-2.5 right-2.5 text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm backdrop-blur-xs border ${
                 (tipe || '').toLowerCase().includes('free')
-                  ? 'bg-purple-900/90 text-purple-200 border-purple-400/40 shadow-purple-900/30'
+                  ? 'bg-[#A3F742] text-slate-950 font-black border-[#A3F742] shadow-xs'
                   : 'bg-[#0F172A]/80 text-white border-white/20'
               }`}
             >
               {(tipe || '').toLowerCase().includes('free') ? (
                 <span className="flex items-center gap-1">
-                  <Zap className="w-2.5 h-2.5 text-purple-300 fill-purple-300" />
+                  <Zap className="w-2.5 h-2.5 text-slate-950 fill-slate-950" />
                   <span>Freelance</span>
                 </span>
               ) : (
@@ -180,13 +180,13 @@ export default function JobCardPublic({
               <div
                 className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm backdrop-blur-xs border ${
                   (tipe || '').toLowerCase().includes('free')
-                    ? 'bg-purple-900/90 text-purple-200 border-purple-400/40'
+                    ? 'bg-[#A3F742] text-slate-950 font-black border-[#A3F742]'
                     : 'bg-black/40 text-white border-white/20'
                 }`}
               >
                 {(tipe || '').toLowerCase().includes('free') ? (
                   <span className="flex items-center gap-1">
-                    <Zap className="w-2.5 h-2.5 text-purple-300 fill-purple-300" />
+                    <Zap className="w-2.5 h-2.5 text-slate-950 fill-slate-950" />
                     <span>Freelance</span>
                   </span>
                 ) : (

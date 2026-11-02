@@ -363,11 +363,11 @@ export default function Beranda() {
                 {activeTipe && (
                   <span className={`inline-flex items-center gap-1.5 text-xs font-black px-2.5 py-0.5 rounded-full border shadow-2xs ${
                     activeTipe === 'Freelance'
-                      ? 'bg-purple-100 text-purple-700 border-purple-200'
+                      ? 'bg-[#A3F742] text-slate-950 border-[#A3F742]'
                       : 'bg-[#EEF2FF] text-[#2B4CE0] border-[#2B4CE0]/30'
                   }`}>
                     {activeTipe === 'Freelance' ? (
-                      <Zap className="w-3 h-3 text-purple-600 fill-purple-600" />
+                      <Zap className="w-3 h-3 text-slate-950 fill-slate-950" />
                     ) : (
                       <Briefcase className="w-3 h-3 text-[#2B4CE0]" />
                     )}
@@ -429,14 +429,14 @@ export default function Beranda() {
                   onClick={() => setActiveTipe(activeTipe === 'Freelance' ? '' : 'Freelance')}
                   className={`group flex items-center justify-center gap-1.5 sm:gap-2 px-2 py-2 sm:px-4 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
                     activeTipe === 'Freelance'
-                      ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/25 font-black'
+                      ? 'bg-[#A3F742] text-slate-950 shadow-sm shadow-[#A3F742]/40 font-black'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
                   }`}
                 >
-                  <Zap className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${activeTipe === 'Freelance' ? 'text-white fill-white' : 'text-slate-400 group-hover:text-purple-600'}`} />
-                  <span>Freelance</span>
+                  <Zap className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 transition-colors ${activeTipe === 'Freelance' ? 'text-slate-950 fill-slate-950' : 'text-slate-400 group-hover:text-slate-800'}`} />
+                  <span className={activeTipe === 'Freelance' ? 'text-slate-950 font-black' : ''}>Freelance</span>
                   <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-extrabold ${
-                    activeTipe === 'Freelance' ? 'bg-white/20 text-white' : 'bg-purple-100/80 text-purple-700'
+                    activeTipe === 'Freelance' ? 'bg-black/15 text-slate-950' : 'bg-[#A3F742]/30 text-slate-800'
                   }`}>
                     {tipeCounts.freelance}
                   </span>

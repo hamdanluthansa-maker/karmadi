@@ -330,8 +330,8 @@ export default function AdminPage() {
             </div>
 
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 fill-purple-600 text-purple-600" />
+              <div className="w-10 h-10 rounded-xl bg-[#A3F742]/25 text-slate-950 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 fill-slate-950 text-slate-950" />
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-slate-400 font-medium truncate">Freelance</div>

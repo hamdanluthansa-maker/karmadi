@@ -328,14 +328,14 @@ export default function AdminJobList({ onSwitchToUpload }) {
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                           (job.tipe || '').toLowerCase().includes('free')
-                            ? 'bg-purple-700 text-white shadow-xs'
+                            ? 'bg-[#A3F742] text-slate-950 font-black shadow-xs'
                             : 'text-white'
                         }`}
                         style={{ backgroundColor: (job.tipe || '').toLowerCase().includes('free') ? undefined : color }}
                       >
                         {(job.tipe || '').toLowerCase().includes('free') ? (
                           <>
-                            <Zap className="w-2.5 h-2.5 fill-white text-white" />
+                            <Zap className="w-2.5 h-2.5 fill-slate-950 text-slate-950" />
                             <span>Freelance</span>
                           </>
                         ) : (
