@@ -64,7 +64,54 @@ export default function Beranda() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showPasangLoker, setShowPasangLoker] = useState(false);
+  const [backToastMessage, setBackToastMessage] = useState('');
   const chipScrollRef = useRef(null);
+  const lastBackPressTimeRef = useRef(0);
+
+  // ── Smart Back Handler: Scroll ke Atas saat Back 1x, Keluar saat Back 2x Cepat ──
+  useEffect(() => {
+    // Tambahkan initial state agar tombol back HP bisa di-intercept
+    if (!window.history.state?.berandaReady) {
+      window.history.replaceState({ berandaReady: true, berandaLevel: 1 }, '');
+      window.history.pushState({ berandaReady: true, berandaLevel: 2 }, '');
+    }
+
+    const handlePopState = (e) => {
+      // Jika modal loker, pasang loker, atau login sedang terbuka, serahkan ke handler modal masing-masing
+      if (selectedJob || showPasangLoker || showAdminLogin) {
+        return;
+      }
+
+      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+      // 1. KASUS A: Pengguna sedang scroll di bawah (> 180px) -> Kembalikan ke paling atas
+      if (currentScrollY > 180) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Jaga history stack agar pengguna tidak langsung keluar
+        window.history.pushState({ berandaReady: true, berandaLevel: 2 }, '');
+        return;
+      }
+
+      // 2. KASUS B: Pengguna sudah di paling atas (atau scroll <= 180px)
+      const now = Date.now();
+      const elapsed = now - lastBackPressTimeRef.current;
+
+      // Jika ditekan 2x dalam rentang 2 detik -> Biarkan keluar dari aplikasi/browser
+      if (elapsed < 2000) {
+        // Izinkan browser melakukan back murni (keluar laman)
+        window.history.back();
+      } else {
+        // Tekanan pertama di posisi atas -> Tampilkan toast instruksi dan dorong state kembali
+        lastBackPressTimeRef.current = now;
+        setBackToastMessage('Tekan sekali lagi untuk keluar dari KARMADI');
+        window.history.pushState({ berandaReady: true, berandaLevel: 2 }, '');
+        setTimeout(() => setBackToastMessage(''), 2000);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selectedJob, showPasangLoker, showAdminLogin]);
 
   // Auto-open modal jika URL memuat parameter loker (?loker=... atau ?q=...)
   useEffect(() => {
@@ -602,6 +649,13 @@ export default function Beranda() {
 
       {/* ── POP-UP INSTAL APLIKASI (PWA) PERSIS CONTOH REFERENSI ── */}
       <InstallPwaModal />
+
+      {/* ── TOAST INDIKATOR BACK 2X KELUAR ── */}
+      {backToastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-sm animate-fade-in border border-slate-700/80 pointer-events-none">
+          {backToastMessage}
+        </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════ */}
       {/* FOOTER                                              */}
