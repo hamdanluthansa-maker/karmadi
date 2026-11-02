@@ -175,44 +175,57 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
 
         {/* ── AREA KONTEN YANG DAPAT DI-SCROLL ── */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 overscroll-contain">
-          {/* Top Bar */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 bg-[#EEF2FF] text-[#2B4CE0] text-xs font-bold px-3 py-1 rounded-full border border-[#2B4CE0]/30">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Terverifikasi Resmi
+          {/* Top Bar (Header Bersih & Rapi Tanpa Teks Terpotong) */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
+            {/* Lencana Status & Tipe Loker */}
+            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+              <span className="inline-flex items-center gap-1 bg-[#EEF2FF] text-[#2B4CE0] text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full border border-[#2B4CE0]/30 whitespace-nowrap shrink-0 shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2B4CE0] shrink-0" />
+                <span>Terverifikasi Resmi</span>
               </span>
-              <span
-                className="text-white text-xs font-bold px-3 py-1 rounded-full shadow-xs bg-[#0F172A]"
-              >
-                {job.tipe || 'Full Time'}
-              </span>
+
+              {(job.tipe || '').toLowerCase().includes('free') ? (
+                <span className="inline-flex items-center gap-1 bg-[#A3F742] text-slate-950 text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full border border-[#A3F742] whitespace-nowrap shrink-0 shadow-2xs">
+                  <Zap className="w-3 h-3 fill-slate-950 text-slate-950 shrink-0" />
+                  <span>Freelance</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center bg-[#0F172A] text-white text-[11px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 shadow-2xs">
+                  {job.tipe || 'Full Time'}
+                </span>
+              )}
+
               {job.is_urgent && (
-                <span className="flex items-center gap-1 bg-rose-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-md animate-pulse border border-rose-400">
-                  🔥 URGENT / CEPAT
+                <span className="inline-flex items-center gap-1 bg-rose-600 text-white text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full shadow-xs animate-pulse border border-rose-400 whitespace-nowrap shrink-0">
+                  <span>🔥 URGENT</span>
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Tombol Aksi Kanan (Bagikan & Tutup) */}
+            <div className="flex items-center gap-2 shrink-0 ml-auto">
               <button
                 type="button"
                 onClick={handleShare}
-                className={`py-1.5 px-3 rounded-full transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs border ${
+                className={`py-1.5 px-3 rounded-full transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs border whitespace-nowrap shrink-0 ${
                   copied || shareFeedback
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                    : 'bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-[#2B4CE0] border-slate-200 hover:border-blue-300'
+                    : 'bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#2B4CE0] border-slate-200 hover:border-blue-300'
                 }`}
                 title="Bagikan Loker Menarik Ini"
               >
                 <Share2 className="w-3.5 h-3.5" />
                 <span>{shareFeedback || 'Bagikan'}</span>
               </button>
+
               <button
+                type="button"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                title="Tutup (Esc)"
+                aria-label="Tutup"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4 stroke-[2.2]" />
               </button>
             </div>
           </div>
