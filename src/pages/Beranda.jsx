@@ -582,7 +582,7 @@ export default function Beranda() {
                 Jangan Ketinggalan Info Loker Terbaru Se-Karesidenan Madiun!
               </h2>
               <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
-                Dapatkan notifikasi lowongan kerja terverifikasi dari Kota/Kab. Madiun, Magetan, Ngawi, Ponorogo & Pacitan langsung di WhatsApp Anda, atau pasang iklan loker usaha Anda mulai dari <strong className="text-[#A3F742] font-black">Rp 0 (Gratis untuk UMKM)</strong>.
+                Dapatkan notifikasi lowongan kerja terverifikasi dari Kota/Kab. Madiun, Magetan, Ngawi, Ponorogo & Pacitan langsung di WhatsApp Anda, atau pasang iklan loker usaha Anda <strong className="text-[#A3F742] font-black">100% Gratis (Promo s/d Akhir Tahun 2026)</strong>.
               </p>
             </div>
 

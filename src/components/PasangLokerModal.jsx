@@ -17,6 +17,8 @@ const PAKET_LIST = [
     id: 'standar',
     nama: 'Paket Standar UMKM',
     harga: 'Gratis (Rp 0)',
+    hargaCoret: null,
+    promoText: 'Gratis Selamanya untuk Usaha Mikro',
     badge: 'Khusus UMKM Mikro',
     badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
     borderColor: 'border-slate-200 hover:border-slate-300',
@@ -33,9 +35,10 @@ const PAKET_LIST = [
   {
     id: 'reguler',
     nama: 'Reguler Terverifikasi',
-    harga: 'Rp 25.000',
-    satuan: '/ loker',
-    badge: 'Paling Diminati',
+    harga: 'Gratis (Rp 0)',
+    hargaCoret: 'Rp 25.000',
+    promoText: '🎉 Gratis s/d Akhir Tahun 2026',
+    badge: '🔥 Paling Diminati • Gratis s/d 2026',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
     borderColor: 'border-emerald-200 hover:border-emerald-400',
     activeRing: 'ring-2 ring-[#2B4CE0] border-[#2B4CE0] bg-blue-50/40',
@@ -52,9 +55,10 @@ const PAKET_LIST = [
   {
     id: 'urgent',
     nama: 'Prioritas URGENT',
-    harga: 'Rp 50.000',
-    satuan: '/ loker',
-    badge: '🔥 Cepat Dapat Karyawan',
+    harga: 'Gratis (Rp 0)',
+    hargaCoret: 'Rp 50.000',
+    promoText: '🎉 Gratis s/d Akhir Tahun 2026',
+    badge: '⚡ Prioritas Cepat • Gratis s/d 2026',
     badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
     borderColor: 'border-rose-200 hover:border-rose-400',
     activeRing: 'ring-2 ring-rose-600 border-rose-600 bg-rose-50/40',
@@ -93,7 +97,7 @@ export default function PasangLokerModal({ isOpen, onClose }) {
     const message =
       `Halo Admin *KARMADI*, saya ingin memasang iklan lowongan kerja:\n\n` +
       `• *Nama Perusahaan / Usaha*: ${usahaClean}\n` +
-      `• *Paket Pilihan*: ${activePaketObj.nama} (${activePaketObj.harga})\n\n` +
+      `• *Paket Pilihan*: ${activePaketObj.nama} (${activePaketObj.harga} • Promo s/d Akhir 2026)\n\n` +
       `Berikut akan saya kirimkan gambar poster / rincian ketentuan lowongannya. Mohon dibantu proses tayangnya. Terima kasih!`;
 
     const waUrl = `https://wa.me/${ADMIN_WA_NUMBER}?text=${encodeURIComponent(message)}`;
@@ -110,7 +114,7 @@ export default function PasangLokerModal({ isOpen, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── HEADER MODAL ── */}
-        <div className="shrink-0 bg-linear-to-r from-[#0F172A] via-[#1E293B] to-[#2B4CE0] text-white px-5 py-4 sm:px-7 sm:py-5 flex items-start justify-between gap-4">
+        <div className="shrink-0 bg-gradient-to-r from-[#1E3AB8] via-[#2B4CE0] to-[#1E3AB8] text-white px-5 py-4 sm:px-7 sm:py-5 flex items-start justify-between gap-4 border-b border-blue-400/20">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#A3F742]/20 border border-[#A3F742]/40 text-[#A3F742] text-[10px] font-extrabold uppercase tracking-wider">
               <Sparkles className="w-3 h-3" />
@@ -119,7 +123,7 @@ export default function PasangLokerModal({ isOpen, onClose }) {
             <h2 className="text-lg sm:text-xl font-black tracking-tight">
               Pasang Info Lowongan Kerja di KARMADI
             </h2>
-            <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+            <p className="text-xs text-blue-100/90 leading-relaxed max-w-2xl">
               Cukup kirim poster atau ketikan syarat via WhatsApp. Sistem AI & Tim KARMADI otomatis merapikan loker Anda agar siap dilamar kandidat terbaik di Madiun, Magetan, Ngawi, Ponorogo & Pacitan.
             </p>
           </div>
@@ -163,6 +167,27 @@ export default function PasangLokerModal({ isOpen, onClose }) {
                 <div className="text-[11px] text-slate-500">Menjangkau talenta lokal Madiun Raya</div>
               </div>
             </div>
+          </div>
+
+          {/* ── BANNER PROMO GRATIS SAMPAI AKHIR TAHUN 2026 ── */}
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-emerald-500/10 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sparkles className="w-4 h-4 text-[#A3F742]" />
+              </div>
+              <div>
+                <div className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <span>PROMO SPESIAL:</span>
+                  <span className="text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md text-[11px] font-black">100% GRATIS</span>
+                </div>
+                <p className="text-[11px] text-slate-600 font-medium">
+                  Semua paket pasang loker resmi digratiskan sampai akhir tahun 2026!
+                </p>
+              </div>
+            </div>
+            <span className="self-start sm:self-auto px-3 py-1 rounded-full bg-emerald-600 text-white text-[10px] font-black tracking-wider uppercase shadow-xs">
+              s/d 31 Des 2026
+            </span>
           </div>
 
           {/* ── PILIHAN PAKET (RATE CARD) ── */}
@@ -215,16 +240,26 @@ export default function PasangLokerModal({ isOpen, onClose }) {
                           <h4 className="font-extrabold text-slate-900 text-sm leading-tight">
                             {paket.nama}
                           </h4>
-                          <div className="flex items-baseline gap-1 mt-0.5">
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            {paket.hargaCoret && (
+                              <span className="text-xs line-through text-slate-400 font-semibold">
+                                {paket.hargaCoret}
+                              </span>
+                            )}
                             <span className="text-base font-black text-[#2B4CE0]">
                               {paket.harga}
                             </span>
-                            {paket.satuan && (
+                            {paket.satuan && !paket.hargaCoret && (
                               <span className="text-[11px] text-slate-500 font-medium">
                                 {paket.satuan}
                               </span>
                             )}
                           </div>
+                          {paket.promoText && (
+                            <div className="text-[10px] font-black text-emerald-600 mt-0.5">
+                              {paket.promoText}
+                            </div>
+                          )}
                         </div>
                       </div>
 
