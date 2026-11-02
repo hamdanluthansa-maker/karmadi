@@ -20,6 +20,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import AdminExtractor from '../components/AdminExtractor';
 import AdminJobList from '../components/AdminJobList';
 import { useJobs } from '../context/JobContext';
+import { 
+  verifyAdminCredentials, 
+  isCurrentAdminSessionValid, 
+  logoutAdmin, 
+  getLoginLockoutStatus 
+} from '../utils/securityUtils';
 
 /**
  * Halaman Admin (/admin)
@@ -49,10 +55,7 @@ export default function AdminPage() {
   }, [jobs]);
 
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return (
-      localStorage.getItem('karmadi_admin_auth') === 'true' ||
-      sessionStorage.getItem('karmadi_admin_auth') === 'true'
-    );
+    return isCurrentAdminSessionValid();
   });
 
   const [username, setUsername] = useState('');
@@ -104,21 +107,19 @@ export default function AdminPage() {
     }
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
-    if (username.trim().toLowerCase() === 'admin' && password.trim() === '@Hamdani231090') {
-      localStorage.setItem('karmadi_admin_auth', 'true');
-      sessionStorage.setItem('karmadi_admin_auth', 'true');
+    const res = await verifyAdminCredentials(username, password);
+    if (res.success) {
       setIsAuthenticated(true);
     } else {
-      setLoginError('Username atau kata sandi tidak cocok. Akses hanya untuk pengelola resmi Karmadi.');
+      setLoginError(res.error || 'Akses ditolak.');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('karmadi_admin_auth');
-    sessionStorage.removeItem('karmadi_admin_auth');
+    logoutAdmin();
     setIsAuthenticated(false);
     navigate('/');
   };

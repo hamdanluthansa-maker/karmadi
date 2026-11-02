@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Lock, User, Eye, EyeOff, X, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { verifyAdminCredentials, getLoginLockoutStatus } from '../utils/securityUtils';
 
 /**
  * Modal Login Khusus Pengelola / Admin Karmadi
@@ -12,29 +13,38 @@ export default function AdminLoginModal({ isOpen, onClose }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockRemaining, setLockRemaining] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      const status = getLoginLockoutStatus();
+      setIsLocked(status.isLocked);
+      setLockRemaining(status.remainingSec);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Kredensial resmi pengelola Karmadi
-    const u = username.trim().toLowerCase();
-    const p = password.trim();
-
-    if (u === 'admin' && p === '@Hamdani231090') {
+    const res = await verifyAdminCredentials(username, password);
+    if (res.success) {
       setIsSuccess(true);
-      localStorage.setItem('karmadi_admin_auth', 'true');
-      sessionStorage.setItem('karmadi_admin_auth', 'true');
-
       setTimeout(() => {
         setIsSuccess(false);
         onClose();
         navigate('/admin');
       }, 700);
     } else {
-      setError('Username atau kata sandi tidak cocok. Akses hanya untuk pengelola resmi Karmadi.');
+      setError(res.error || 'Autentikasi ditolak.');
+      const status = getLoginLockoutStatus();
+      if (status.isLocked) {
+        setIsLocked(true);
+        setLockRemaining(status.remainingSec);
+      }
     }
   };
 
