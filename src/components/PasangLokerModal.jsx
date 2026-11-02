@@ -16,7 +16,9 @@ import {
   UploadCloud,
   Trash2,
   Info,
+  Calendar,
 } from 'lucide-react';
+import { getTodayDateString, addDays, formatDateIndo } from '../utils/dateUtils';
 
 const ADMIN_WA_NUMBER = '6285119491567';
 
@@ -37,6 +39,8 @@ export default function PasangLokerModal({ isOpen, onClose }) {
   const [alamatDetail, setAlamatDetail] = useState('');
   const [posisi, setPosisi] = useState('');
   const [tipeKerja, setTipeKerja] = useState('Full Time');
+  const [tanggalMulai, setTanggalMulai] = useState(() => getTodayDateString());
+  const [tanggalSelesai, setTanggalSelesai] = useState(() => addDays(getTodayDateString(), 30));
   const [kualifikasiSingkat, setKualifikasiSingkat] = useState('');
   const [posterFile, setPosterFile] = useState(null);
   const [posterPreview, setPosterPreview] = useState('');
@@ -103,6 +107,7 @@ export default function PasangLokerModal({ isOpen, onClose }) {
       `📱 *Nomor HP / WA Aktif*: ${nomorHp.trim()}\n` +
       `📍 *Lokasi Penempatan*: ${lokasiLengkap}\n` +
       `💼 *Posisi yang Dicari*: ${posisi.trim() || '(Sesuai Poster)'} (${tipeKerja})\n` +
+      `🗓️ *Waktu Penayangan*: ${formatDateIndo(tanggalMulai)} s/d ${formatDateIndo(tanggalSelesai)}\n` +
       (kualifikasiSingkat.trim()
         ? `📋 *Syarat / Keterangan Singkat*:\n${kualifikasiSingkat.trim()}\n\n`
         : `\n`) +
@@ -291,6 +296,63 @@ export default function PasangLokerModal({ isOpen, onClose }) {
                 <option value="Full Time">Full Time</option>
                 <option value="Freelance">Freelance / Part Time</option>
               </select>
+            </div>
+          </div>
+
+          {/* ── BARIS 4: WAKTU PENAYANGAN LOKER (TANGGAL MULAI S/D SELESAI) ── */}
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="text-xs font-extrabold text-slate-700 flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-[#2B4CE0]" />
+                <span>Waktu Penayangan Loker (Tanggal Mulai s/d Berakhir) <span className="text-rose-500">*</span></span>
+              </label>
+
+              {/* Tombol Pintas Durasi */}
+              <div className="flex items-center gap-1.5">
+                {[
+                  { label: '7 Hari', days: 7 },
+                  { label: '14 Hari', days: 14 },
+                  { label: '30 Hari', days: 30 },
+                ].map((preset) => (
+                  <button
+                    key={preset.days}
+                    type="button"
+                    onClick={() => setTanggalSelesai(addDays(tanggalMulai, preset.days))}
+                    className="px-2 py-0.5 rounded-lg bg-white hover:bg-blue-50 text-[#2B4CE0] border border-blue-200 text-[10px] font-bold transition cursor-pointer shadow-2xs"
+                  >
+                    +{preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <span className="block text-[11px] font-semibold text-slate-500 mb-1">
+                  Mulai Ditayangkan:
+                </span>
+                <input
+                  type="date"
+                  required
+                  value={tanggalMulai}
+                  onChange={(e) => setTanggalMulai(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2B4CE0]"
+                />
+              </div>
+
+              <div>
+                <span className="block text-[11px] font-semibold text-slate-500 mb-1">
+                  Sampai Tanggal (Batas Akhir):
+                </span>
+                <input
+                  type="date"
+                  required
+                  min={tanggalMulai}
+                  value={tanggalSelesai}
+                  onChange={(e) => setTanggalSelesai(e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#2B4CE0]"
+                />
+              </div>
             </div>
           </div>
 
