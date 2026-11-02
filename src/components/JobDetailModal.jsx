@@ -175,57 +175,57 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
 
         {/* ── AREA KONTEN YANG DAPAT DI-SCROLL ── */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 overscroll-contain">
-          {/* Top Bar (Header Bersih & Rapi Tanpa Teks Terpotong) */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-slate-100">
-            {/* Lencana Status & Tipe Loker */}
-            <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-              <span className="inline-flex items-center gap-1 bg-[#EEF2FF] text-[#2B4CE0] text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full border border-[#2B4CE0]/30 whitespace-nowrap shrink-0 shadow-2xs">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#2B4CE0] shrink-0" />
+          {/* Top Bar (Sejajar 1 Baris Penuh di HP & Desktop) */}
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 pb-2.5 border-b border-slate-100">
+            {/* Lencana Status & Tipe Loker (Kiri) */}
+            <div className="flex items-center gap-1 sm:gap-1.5 min-w-0 overflow-x-auto no-scrollbar">
+              <span className="inline-flex items-center gap-1 bg-[#EEF2FF] text-[#2B4CE0] text-[10px] sm:text-xs font-black px-2 sm:px-2.5 py-1 rounded-full border border-[#2B4CE0]/30 whitespace-nowrap shrink-0 shadow-2xs">
+                <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#2B4CE0] shrink-0" />
                 <span>Terverifikasi Resmi</span>
               </span>
 
               {(job.tipe || '').toLowerCase().includes('free') ? (
-                <span className="inline-flex items-center gap-1 bg-[#A3F742] text-slate-950 text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full border border-[#A3F742] whitespace-nowrap shrink-0 shadow-2xs">
-                  <Zap className="w-3 h-3 fill-slate-950 text-slate-950 shrink-0" />
+                <span className="inline-flex items-center gap-1 bg-[#A3F742] text-slate-950 text-[10px] sm:text-xs font-black px-2 sm:px-2.5 py-1 rounded-full border border-[#A3F742] whitespace-nowrap shrink-0 shadow-2xs">
+                  <Zap className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-slate-950 text-slate-950 shrink-0" />
                   <span>Freelance</span>
                 </span>
               ) : (
-                <span className="inline-flex items-center bg-[#0F172A] text-white text-[11px] sm:text-xs font-extrabold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 shadow-2xs">
+                <span className="inline-flex items-center bg-[#0F172A] text-white text-[10px] sm:text-xs font-extrabold px-2 sm:px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 shadow-2xs">
                   {job.tipe || 'Full Time'}
                 </span>
               )}
 
               {job.is_urgent && (
-                <span className="inline-flex items-center gap-1 bg-rose-600 text-white text-[11px] sm:text-xs font-black px-2.5 py-1 rounded-full shadow-xs animate-pulse border border-rose-400 whitespace-nowrap shrink-0">
+                <span className="inline-flex items-center gap-1 bg-rose-600 text-white text-[10px] sm:text-xs font-black px-2 sm:px-2.5 py-1 rounded-full shadow-xs animate-pulse border border-rose-400 whitespace-nowrap shrink-0">
                   <span>🔥 URGENT</span>
                 </span>
               )}
             </div>
 
-            {/* Tombol Aksi Kanan (Bagikan & Tutup) */}
-            <div className="flex items-center gap-2 shrink-0 ml-auto">
+            {/* Tombol Aksi Kanan (Bagikan & Tutup - Sejajar Lurus) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
                 type="button"
                 onClick={handleShare}
-                className={`py-1.5 px-3 rounded-full transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs border whitespace-nowrap shrink-0 ${
+                className={`py-1 px-2.5 sm:py-1.5 sm:px-3 rounded-full transition-all text-[11px] sm:text-xs font-bold flex items-center gap-1 sm:gap-1.5 cursor-pointer shadow-2xs border whitespace-nowrap shrink-0 ${
                   copied || shareFeedback
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                     : 'bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-[#2B4CE0] border-slate-200 hover:border-blue-300'
                 }`}
                 title="Bagikan Loker Menarik Ini"
               >
-                <Share2 className="w-3.5 h-3.5" />
+                <Share2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span>{shareFeedback || 'Bagikan'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0"
                 title="Tutup (Esc)"
                 aria-label="Tutup"
               >
-                <X className="w-4 h-4 stroke-[2.2]" />
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.2]" />
               </button>
             </div>
           </div>
