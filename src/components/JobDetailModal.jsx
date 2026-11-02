@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import SmartDraftModal from './SmartDraftModal';
 import { detectWilayah } from '../utils/regionUtils';
+import { getJobShareUrl, formatJobTeaserShareText } from '../utils/shareUtils';
 import { getJobExpiryStatus, formatDateIndo } from '../utils/dateUtils';
 
 /**
@@ -32,6 +33,7 @@ import { getJobExpiryStatus, formatDateIndo } from '../utils/dateUtils';
  */
 export default function JobDetailModal({ job, onClose, onApplyClick }) {
   const [copied, setCopied] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
   const [showDraftModal, setShowDraftModal] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
   if (!job) return null;
@@ -83,10 +85,52 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
     ? job.benefit.split('\n').filter(Boolean)
     : [];
 
-  const handleShare = () => {
-    navigator.clipboard?.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleShare = async () => {
+    const shareUrl = getJobShareUrl(job);
+    const teaserText = formatJobTeaserShareText(job);
+
+    // 1. Coba gunakan Web Share API bawaan HP / Browser (jika didukung)
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({
+          title: `Loker ${job.posisi} - ${job.nama_perusahaan}`,
+          text: teaserText,
+          url: shareUrl,
+        });
+        setShareFeedback('Berhasil dibagikan!');
+        setTimeout(() => setShareFeedback(''), 2500);
+        return;
+      } catch (err) {
+        if (err.name === 'AbortError') return; // Pengguna membatalkan dialog share
+      }
+    }
+
+    // 2. Fallback: Salin teks teaser menarik beserta tautan web ke Clipboard
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(teaserText);
+        setCopied(true);
+        setShareFeedback('Teks & Link Loker Tersalin!');
+        setTimeout(() => {
+          setCopied(false);
+          setShareFeedback('');
+        }, 3000);
+      } catch (e) {
+        // Fallback klasik jika clipboard API ditolak
+        const textArea = document.createElement('textarea');
+        textArea.value = teaserText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setShareFeedback('Teks & Link Loker Tersalin!');
+        setTimeout(() => {
+          setCopied(false);
+          setShareFeedback('');
+        }, 3000);
+      }
+    }
   };
 
   return (
@@ -127,16 +171,21 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
 
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={handleShare}
-                className="text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition-colors text-xs flex items-center gap-1"
-                title="Salin Link"
+                className={`py-1.5 px-3 rounded-full transition-all text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-2xs border ${
+                  copied || shareFeedback
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                    : 'bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-[#2B4CE0] border-slate-200 hover:border-blue-300'
+                }`}
+                title="Bagikan Loker Menarik Ini"
               >
-                <Share2 className="w-4 h-4" />
-                {copied && <span className="text-emerald-600 font-bold">Tersalin!</span>}
+                <Share2 className="w-3.5 h-3.5" />
+                <span>{shareFeedback || 'Bagikan'}</span>
               </button>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>

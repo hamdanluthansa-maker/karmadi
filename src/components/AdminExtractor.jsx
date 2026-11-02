@@ -40,6 +40,7 @@ import JobCard from './JobCard';
 import { useJobs } from '../context/JobContext';
 import { extractJobsFromImage, extractJobsFromMultipleImages } from '../services/aiExtractorService';
 import { extractJobFromRawText } from '../services/textJobParser';
+import { formatBatchJobsTeaserText, formatJobTeaserShareText } from '../utils/shareUtils';
 import { getTodayDateString, addMonths, addDays, formatDateIndo } from '../utils/dateUtils';
 import { 
   getGeminiApiKey, 
@@ -69,31 +70,11 @@ export default function AdminExtractor() {
   const KARMADI_WA_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb93m90F6sn4i0hag42j';
 
   /**
-   * Helper format teks rapi dan menarik untuk disiarkan ke Saluran WhatsApp
+   * Helper format teks teaser viral & menarik untuk disiarkan ke Saluran WhatsApp
+   * Mendorong audiens mengunjungi web portal Karmadi tanpa kontak mentah di chat
    */
   const formatJobsForWaChannel = (jobs) => {
-    if (!jobs || jobs.length === 0) return '';
-    return jobs
-      .map((job, idx) => {
-        const posisi = (job.posisi || 'Lowongan Kerja').toUpperCase();
-        const perusahaan = job.nama_perusahaan || 'Perusahaan Mitra';
-        const wilayah = job.wilayah || job.lokasi || 'Madiun Raya';
-        const syarat = Array.isArray(job.syarat) ? job.syarat.slice(0, 4) : [];
-        const syaratText = syarat.length > 0 ? syarat.map((s) => `  • ${s}`).join('\n') : '  • Kualifikasi sesuai pengumuman';
-        const benefit = Array.isArray(job.benefit) && job.benefit.length > 0 ? job.benefit.slice(0, 3).map((b) => `  ✓ ${b}`).join('\n') : '';
-        const kontak = job.kontak_wa ? `https://wa.me/${job.kontak_wa.replace(/[^0-9]/g, '')}` : (job.link_pendaftaran || (job.email ? `mailto:${job.email}` : 'Cek info lengkap di portal'));
-
-        return `📢 *INFO LOKER MADIUN RAYA #${idx + 1}*\n\n` +
-          `🏢 *Perusahaan*: ${perusahaan}\n` +
-          `💼 *Posisi*: *${posisi}*\n` +
-          `📍 *Penempatan*: ${wilayah}\n\n` +
-          `📋 *Kualifikasi Utama*:\n${syaratText}\n` +
-          (benefit ? `\n🎁 *Benefit / Fasilitas*:\n${benefit}\n` : '') +
-          `\n📲 *Cara Melamar / Kontak*:\n${kontak}\n` +
-          `\n🌐 *Portal Resmi Karmadi*: https://karmadi.vercel.app\n` +
-          `━━━━━━━━━━━━━━━━━━━━━`;
-      })
-      .join('\n\n');
+    return formatBatchJobsTeaserText(jobs);
   };
 
   const handleShareToWaChannel = (jobsToShare = lastPublishedJobs) => {
@@ -101,7 +82,7 @@ export default function AdminExtractor() {
     const text = formatJobsForWaChannel(list);
     if (!text) return;
 
-    // Salin teks ke clipboard agar admin bisa langsung paste di saluran
+    // Salin teks teaser ke clipboard agar admin bisa langsung paste di saluran
     if (navigator?.clipboard?.writeText) {
       navigator.clipboard.writeText(text).then(() => {
         setIsCopiedWaText(true);
@@ -111,7 +92,7 @@ export default function AdminExtractor() {
 
     // Buka Saluran WhatsApp di tab baru
     window.open(KARMADI_WA_CHANNEL_URL, '_blank', 'noopener,noreferrer');
-    showToast('Teks loker tersalin ke clipboard! Membuka Saluran WhatsApp...', 'success');
+    showToast('Teks teaser loker tersalin ke clipboard! Membuka Saluran WhatsApp...', 'success');
   };
 
   // Gemini API Key & Model State

@@ -27,7 +27,7 @@ import {
   Lock,
   Zap,
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import JobCardPublic from '../components/JobCardPublic';
 import JobDetailModal from '../components/JobDetailModal';
@@ -54,6 +54,7 @@ const KATEGORI_LIST = [
 
 export default function Beranda() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { jobs } = useJobs();
   const [search, setSearch] = useState('');
   const [activeKategori, setActiveKategori] = useState('');
@@ -63,6 +64,24 @@ export default function Beranda() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showPasangLoker, setShowPasangLoker] = useState(false);
   const chipScrollRef = useRef(null);
+
+  // Auto-open modal jika URL memuat parameter loker (?loker=... atau ?q=...)
+  useEffect(() => {
+    const targetLokerId = searchParams.get('loker');
+    const query = searchParams.get('q');
+
+    if (targetLokerId && jobs && jobs.length > 0) {
+      const found = jobs.find((j) => String(j.id) === String(targetLokerId));
+      if (found) {
+        setSelectedJob(found);
+        return;
+      }
+    }
+
+    if (query && !search) {
+      setSearch(query);
+    }
+  }, [searchParams, jobs]);
 
   // Hanya loker yang masih aktif dalam masa tenggat (maks 1 bulan atau sesuai custom tanggal tayang)
   const activeJobs = useMemo(() => jobs.filter(isJobActive), [jobs]);
