@@ -567,18 +567,22 @@ export default function Beranda() {
       {/* BANNER KOMUNITAS WA & PASANG LOKER UMKM (RETENTION) */}
       {/* ═══════════════════════════════════════════════════ */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 mb-6">
-        <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-[#0F172A] via-[#1E293B] to-[#2B4CE0] text-white p-6 sm:p-8 shadow-xl border border-slate-800">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E3AB8] via-[#2B4CE0] to-[#1E3AB8] text-white p-6 sm:p-8 shadow-xl shadow-blue-900/15 border border-blue-400/25">
+          {/* Subtle Ambient Glow */}
+          <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-[#A3F742]/10 rounded-full blur-3xl pointer-events-none" />
+
           <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#A3F742]/20 border border-[#A3F742]/40 text-[#A3F742] text-[11px] font-extrabold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-[#A3F742] text-[11px] font-extrabold uppercase tracking-wider">
                 <Sparkles className="w-3.5 h-3.5" />
                 Komunitas Pencari Kerja & UMKM Madiun Raya
               </div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight leading-snug text-white">
                 Jangan Ketinggalan Info Loker Terbaru Se-Karesidenan Madiun!
               </h2>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Dapatkan notifikasi lowongan kerja terverifikasi dari Kota/Kab. Madiun, Magetan, Ngawi, Ponorogo & Pacitan langsung di WhatsApp Anda, atau pasang iklan loker usaha Anda mulai dari <strong className="text-[#A3F742]">Rp 0 (Gratis untuk UMKM)</strong>.
+              <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed">
+                Dapatkan notifikasi lowongan kerja terverifikasi dari Kota/Kab. Madiun, Magetan, Ngawi, Ponorogo & Pacitan langsung di WhatsApp Anda, atau pasang iklan loker usaha Anda mulai dari <strong className="text-[#A3F742] font-black">Rp 0 (Gratis untuk UMKM)</strong>.
               </p>
             </div>
 
@@ -587,16 +591,16 @@ export default function Beranda() {
                 href="https://whatsapp.com/channel/0029Vb93m90F6sn4i0hag42j"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-3 rounded-2xl bg-[#A3F742] hover:bg-[#92e635] text-slate-950 font-black text-xs sm:text-sm shadow-lg shadow-[#A3F742]/20 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95"
+                className="px-5 py-3 rounded-2xl bg-white hover:bg-blue-50 text-[#1E3AB8] font-black text-xs sm:text-sm shadow-xl shadow-blue-950/20 flex items-center justify-center gap-2 transition cursor-pointer active:scale-95"
               >
-                <MessageCircle className="w-4 h-4 fill-slate-950" />
+                <MessageCircle className="w-4 h-4 fill-[#25D366] text-[#25D366]" />
                 <span>Gabung Saluran WA KARMADI</span>
               </a>
 
               <button
                 type="button"
                 onClick={() => setShowPasangLoker(true)}
-                className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/25 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer active:scale-95"
+                className="px-5 py-3 rounded-2xl bg-white/15 hover:bg-white/25 text-white border border-white/30 font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2 transition cursor-pointer active:scale-95 backdrop-blur-xs"
               >
                 <Building2 className="w-4 h-4 text-[#A3F742]" />
                 <span>Pasang Loker</span>
