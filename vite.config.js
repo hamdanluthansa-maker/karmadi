@@ -108,15 +108,22 @@ function jsonStoragePlugin() {
           req.on('end', () => {
             try {
               const parsed = body ? JSON.parse(body) : {};
-              let existing = { apiKey: '', model: '' };
+              let existing = { apiKey: '', activeModel: 'gemini-3.8-flash', model: 'gemini-3.8-flash' };
               if (fs.existsSync(aiConfigFile)) {
                 try {
                   existing = JSON.parse(fs.readFileSync(aiConfigFile, 'utf-8'));
                 } catch {}
               }
+              const resolvedModel =
+                (typeof parsed.activeModel === 'string' && parsed.activeModel.trim()) ||
+                (typeof parsed.model === 'string' && parsed.model.trim()) ||
+                existing.activeModel ||
+                existing.model ||
+                'gemini-3.8-flash';
               const nextConfig = {
                 apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey.trim() : existing.apiKey || '',
-                model: typeof parsed.model === 'string' ? parsed.model.trim() : existing.model || '',
+                activeModel: resolvedModel,
+                model: resolvedModel,
                 updatedAt: Date.now(),
               };
               fs.writeFileSync(aiConfigFile, JSON.stringify(nextConfig, null, 2), 'utf-8');

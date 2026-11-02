@@ -63,12 +63,12 @@ export default function AdminExtractor() {
 
   // Gemini API Key & Model State
   const [activeApiKey, setActiveApiKey] = useState('');
-  const [activeModel, setActiveModel] = useState('gemini-2.5-flash');
+  const [activeModel, setActiveModel] = useState('gemini-3.8-flash');
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
   const [inputKey, setInputKey] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-3.8-flash');
   const [isCustomModel, setIsCustomModel] = useState(false);
-  const [customModelName, setCustomModelName] = useState('');
+  const [customModelName, setCustomModelName] = useState('gemini-3.8-flash');
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [keyTestStatus, setKeyTestStatus] = useState(null);
 
@@ -80,7 +80,7 @@ export default function AdminExtractor() {
         const synced = await syncAiConfigFromLocalServer();
         if (synced?.apiKey) {
           key = synced.apiKey;
-          m = getActiveGeminiModel();
+          m = synced.activeModel || getActiveGeminiModel();
         }
       } else {
         setGeminiApiKey(key);
@@ -90,9 +90,9 @@ export default function AdminExtractor() {
       setInputKey(key);
       setActiveModel(m);
       setSelectedModel(m);
+      setCustomModelName(m || 'gemini-3.8-flash');
       if (!POPULAR_GEMINI_MODELS.some(item => item.id === m)) {
         setIsCustomModel(true);
-        setCustomModelName(m);
       }
     };
     initAiConfig();
@@ -1816,12 +1816,13 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                       } else if (val.trim().startsWith('sk-or-')) {
                         setSelectedModel('qwen/qwen2.5-vl-72b-instruct:free');
                         setIsCustomModel(false);
-                      } else if (val.trim().startsWith('AIza')) {
-                        setSelectedModel('gemini-2.5-flash');
+                      } else if (val.trim().startsWith('AIza') || val.trim().startsWith('AQ.')) {
+                        setSelectedModel('gemini-3.8-flash');
+                        setCustomModelName('gemini-3.8-flash');
                         setIsCustomModel(false);
                       }
                     }}
-                    placeholder="Tempel API Key Gratis: gsk_... (Groq) / sk-or-... (OpenRouter) / AIzaSy... (Gemini)"
+                    placeholder="Tempel API Key Gratis: AQ.... / AIzaSy... (Gemini) / gsk_... (Groq) / sk-or-... (OpenRouter)"
                     className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:bg-white font-mono text-slate-800"
                   />
                 </div>
@@ -1902,7 +1903,12 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
 
                   {/* Opsi Custom Model */}
                   <label
-                    onClick={() => setIsCustomModel(true)}
+                    onClick={() => {
+                      setIsCustomModel(true);
+                      if (!customModelName.trim()) {
+                        setCustomModelName(activeModel || 'gemini-3.8-flash');
+                      }
+                    }}
                     className={`flex flex-col gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
                       isCustomModel
                         ? 'border-purple-500 bg-purple-50 text-purple-950 font-bold'
@@ -1914,7 +1920,12 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                         type="radio"
                         name="gemini_model_choice"
                         checked={isCustomModel}
-                        onChange={() => setIsCustomModel(true)}
+                        onChange={() => {
+                          setIsCustomModel(true);
+                          if (!customModelName.trim()) {
+                            setCustomModelName(activeModel || 'gemini-3.8-flash');
+                          }
+                        }}
                         className="text-purple-600 focus:ring-purple-500"
                       />
                       <span className="text-xs">Ketik Model Custom Google Sendiri...</span>
@@ -1924,7 +1935,7 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                         type="text"
                         value={customModelName}
                         onChange={(e) => setCustomModelName(e.target.value)}
-                        placeholder="Misal: gemini-2.5-flash atau gemini-2.5-pro"
+                        placeholder="Misal: gemini-3.8-flash atau gemini-3.5-flash-lite"
                         className="w-full px-3 py-1.5 text-xs bg-white border border-purple-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-purple-500 font-mono text-slate-800"
                       />
                     )}

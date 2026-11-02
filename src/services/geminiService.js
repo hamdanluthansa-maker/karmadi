@@ -61,27 +61,27 @@ export const POPULAR_GEMINI_MODELS = [
     keyPrefix: 'sk-or-',
     keyUrl: 'https://openrouter.ai/settings/keys'
   },
-  // Google Gemini (Optimized Free Tier)
+  // Google Gemini (Optimized Free Tier 2026)
   {
-    id: 'gemini-2.5-flash',
+    id: 'gemini-3.8-flash',
     provider: 'gemini',
-    name: 'Google: Gemini 2.5 Flash (Akurat • Mode Cepat Anti-Limit)',
-    badge: 'Gemini 2.5',
-    keyPrefix: 'AIzaSy',
+    name: 'Google: Gemini 3.8 Flash (Terbaru 2026 • Akurat & Cepat)',
+    badge: 'Rekomendasi',
+    keyPrefix: 'AQ.',
     keyUrl: 'https://aistudio.google.com/app/apikey'
   },
   {
-    id: 'gemini-2.5-flash-lite',
+    id: 'gemini-3.5-flash-lite',
     provider: 'gemini',
-    name: 'Google: Gemini 2.5 Flash-Lite (Kuota Gratis Terbesar 1500/hari)',
+    name: 'Google: Gemini 3.5 Flash-Lite (Kuota Gratis Terbesar & Anti-Limit)',
     badge: 'Anti-Limit',
-    keyPrefix: 'AIzaSy',
+    keyPrefix: 'AQ.',
     keyUrl: 'https://aistudio.google.com/app/apikey'
   },
   {
-    id: 'gemini-2.0-flash-lite',
+    id: 'gemini-flash-latest',
     provider: 'gemini',
-    name: 'Google: Gemini 2.0 Flash-Lite (Cepat & Ringan)',
+    name: 'Google: Gemini Flash Latest (Otomatis Versi Stabil Terbaru)',
     badge: 'Stabil',
     keyPrefix: 'AIzaSy',
     keyUrl: 'https://aistudio.google.com/app/apikey'
@@ -92,7 +92,7 @@ export function detectProviderFromKey(apiKey, modelName = '') {
   const key = (apiKey || '').trim();
   if (key.startsWith('gsk_')) return 'groq';
   if (key.startsWith('sk-or-')) return 'openrouter';
-  if (key.startsWith('AIza')) return 'gemini';
+  if (key.startsWith('AIza') || key.startsWith('AQ.')) return 'gemini';
   if (
     modelName === 'llama-3.3-70b-versatile' ||
     modelName === 'qwen/qwen3.8-27b' ||
@@ -117,13 +117,14 @@ export async function syncAiConfigFromLocalServer() {
     const ct = res.headers.get('content-type') || '';
     if (!res.ok || !ct.includes('application/json')) return null;
     const data = await res.json();
+    const serverModel = data?.activeModel || data?.model || '';
     const currentLocalKey = getGeminiApiKey();
     if (!currentLocalKey && data?.apiKey) {
       localStorage.setItem(STORAGE_KEY, data.apiKey);
-      if (data.activeModel) {
-        localStorage.setItem(STORAGE_MODEL_KEY, JSON.stringify({ model: data.activeModel, version: 'v1beta' }));
+      if (serverModel) {
+        localStorage.setItem(STORAGE_MODEL_KEY, JSON.stringify({ model: serverModel, version: 'v1beta' }));
       }
-      return data;
+      return { apiKey: data.apiKey, activeModel: serverModel || 'gemini-3.8-flash' };
     }
     if (currentLocalKey && !data?.apiKey) {
       fetch(getLocalAiConfigEndpoint(), {
@@ -165,7 +166,7 @@ export function setGeminiApiKey(key) {
 }
 
 export function getActiveGeminiModel() {
-  if (typeof window === 'undefined') return 'gemini-2.5-flash';
+  if (typeof window === 'undefined') return 'gemini-3.8-flash';
   try {
     const stored =
       localStorage.getItem(STORAGE_MODEL_KEY) ||
@@ -173,18 +174,25 @@ export function getActiveGeminiModel() {
     if (stored) {
       const parsed = JSON.parse(stored);
       const modelStr = typeof parsed === 'string' ? parsed : parsed?.model;
-      if (modelStr === 'gemini-2.0-flash' || modelStr === 'gemini-1.5-flash') {
-        return 'gemini-2.5-flash';
+      if (
+        modelStr === 'gemini-2.5-flash' ||
+        modelStr === 'gemini-2.0-flash' ||
+        modelStr === 'gemini-1.5-flash'
+      ) {
+        return 'gemini-3.8-flash';
+      }
+      if (modelStr === 'gemini-2.5-flash-lite' || modelStr === 'gemini-2.0-flash-lite') {
+        return 'gemini-3.5-flash-lite';
       }
       if (modelStr) return modelStr;
     }
   } catch (e) {}
-  return 'gemini-2.5-flash';
+  return 'gemini-3.8-flash';
 }
 
 export function setActiveGeminiModel(modelName) {
   if (typeof window === 'undefined') return;
-  const clean = (modelName || 'gemini-2.5-flash').trim().replace(/^models\//, '');
+  const clean = (modelName || 'gemini-3.8-flash').trim().replace(/^models\//, '');
   localStorage.setItem(STORAGE_MODEL_KEY, JSON.stringify({ model: clean, version: 'v1beta' }));
   fetch(getLocalAiConfigEndpoint(), {
     method: 'POST',
@@ -512,18 +520,25 @@ export async function testGeminiApiKey(key, requestedModel = null) {
   }
 
   // ════════════════════════════════════════════════════════════════════
-  // 3. UJI GOOGLE GEMINI API (AIzaSy...)
+  // 3. UJI GOOGLE GEMINI API (AQ.... / AIzaSy...)
   // ════════════════════════════════════════════════════════════════════
   const sanitizedModel =
-    requestedModel && requestedModel !== 'gemini-2.0-flash' && !requestedModel.includes('/')
+    requestedModel &&
+    requestedModel !== 'gemini-2.5-flash' &&
+    requestedModel !== 'gemini-2.0-flash' &&
+    requestedModel !== 'gemini-1.5-flash' &&
+    !requestedModel.includes('/')
       ? requestedModel
-      : 'gemini-2.5-flash';
+      : 'gemini-3.8-flash';
 
   const candidateModels = [
     sanitizedModel,
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-1.5-flash'
+    'gemini-3.8-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
+    'gemini-2.5-flash'
   ];
   const uniqueModels = [...new Set(candidateModels)].filter((m) => m !== 'gemini-2.0-flash');
   let primaryErrorMsg = '';
@@ -596,11 +611,11 @@ export async function testGeminiApiKey(key, requestedModel = null) {
     errorToReport.includes('quota') ||
     errorToReport.includes('RESOURCE_EXHAUSTED')
   ) {
-    setActiveGeminiModel('gemini-2.5-flash-lite');
+    setActiveGeminiModel('gemini-3.5-flash-lite');
     return {
       success: true,
-      activeModel: 'gemini-2.5-flash-lite',
-      message: `API Key Valid! Otomatis dialihkan ke gemini-2.5-flash-lite agar hemat kuota & bebas limit.`
+      activeModel: 'gemini-3.5-flash-lite',
+      message: `API Key Valid! Otomatis dialihkan ke gemini-3.5-flash-lite agar hemat kuota & bebas limit.`
     };
   }
 
@@ -923,16 +938,20 @@ ${rawOcrText}
 
   const cleanSelected =
     selectedModel &&
+    selectedModel !== 'gemini-2.5-flash' &&
     selectedModel !== 'gemini-2.0-flash' &&
     selectedModel !== 'gemini-1.5-flash' &&
     !selectedModel.includes('/')
       ? selectedModel
-      : 'gemini-2.5-flash';
+      : 'gemini-3.8-flash';
   const candidateModels = [
     cleanSelected,
-    'gemini-2.5-flash',
-    'gemini-2.5-flash-lite',
-    'gemini-2.0-flash-lite'
+    'gemini-3.8-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.7-flash',
+    'gemini-3.5-flash',
+    'gemini-flash-latest',
+    'gemini-2.5-flash'
   ];
   const uniqueModels = [...new Set(candidateModels)].filter(
     (m) => m !== 'gemini-2.0-flash' && m !== 'gemini-1.5-flash'
@@ -1083,12 +1102,23 @@ export async function extractJobTextWithAI(rawText, systemPrompt) {
   // Google Gemini
   const cleanSelected =
     selectedModel &&
+    selectedModel !== 'gemini-2.5-flash' &&
     selectedModel !== 'gemini-2.0-flash' &&
     selectedModel !== 'gemini-1.5-flash' &&
     !selectedModel.includes('/')
       ? selectedModel
-      : 'gemini-2.5-flash';
-  const models = [...new Set([cleanSelected, 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'])];
+      : 'gemini-3.8-flash';
+  const models = [
+    ...new Set([
+      cleanSelected,
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-3.7-flash',
+      'gemini-3.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash'
+    ])
+  ];
 
   for (const m of models) {
     try {
