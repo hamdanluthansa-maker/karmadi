@@ -50,6 +50,31 @@ export default function JobDetailModal({ job, onClose, onApplyClick }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showImagePreview]);
 
+  // Intercept tombol Back HP (Gesture swipe kiri / back button Android) agar menutup modal daripada keluar dari web
+  useEffect(() => {
+    const stateId = `loker-modal-${job.id || Date.now()}`;
+    // Dorong history state baru saat modal loker aktif terbuka
+    window.history.pushState({ modalOpen: true, stateId }, '');
+
+    const handlePopState = (event) => {
+      // Jika pengguna menekan back pada HP, jalankan penutupan modal loker
+      if (onClose) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      // Jika modal ditutup lewat tombol X atau klik luar (bukan dari gesture back HP),
+      // kembalikan state history agar tidak meninggalkan jejak back palsu
+      if (window.history.state?.modalOpen && window.history.state?.stateId === stateId) {
+        window.history.back();
+      }
+    };
+  }, [job?.id, onClose]);
+
   const displayWilayah = job.wilayah || detectWilayah(job.lokasi, job.syarat);
   const color = job.warna_primer || '#2563eb';
   const cleanPhone = (job.kontak_wa || '').replace(/[^0-9]/g, '');
