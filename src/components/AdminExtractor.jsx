@@ -32,7 +32,9 @@ import {
   Hourglass,
   Building2,
   Trash2,
-  Mail
+  Mail,
+  Share2,
+  Copy
 } from 'lucide-react';
 import JobCard from './JobCard';
 import { useJobs } from '../context/JobContext';
@@ -60,6 +62,57 @@ export default function AdminExtractor() {
   const [isPublished, setIsPublished] = useState(false);
   const [activeTab, setActiveTab] = useState('card'); // 'card' | 'json'
   const [notification, setNotification] = useState(null);
+  const [lastPublishedJobs, setLastPublishedJobs] = useState([]);
+  const [isCopiedWaText, setIsCopiedWaText] = useState(false);
+
+  // Link Saluran Resmi WhatsApp Karmadi
+  const KARMADI_WA_CHANNEL_URL = 'https://whatsapp.com/channel/0029Vb93m90F6sn4i0hag42j';
+
+  /**
+   * Helper format teks rapi dan menarik untuk disiarkan ke Saluran WhatsApp
+   */
+  const formatJobsForWaChannel = (jobs) => {
+    if (!jobs || jobs.length === 0) return '';
+    return jobs
+      .map((job, idx) => {
+        const posisi = (job.posisi || 'Lowongan Kerja').toUpperCase();
+        const perusahaan = job.nama_perusahaan || 'Perusahaan Mitra';
+        const wilayah = job.wilayah || job.lokasi || 'Madiun Raya';
+        const syarat = Array.isArray(job.syarat) ? job.syarat.slice(0, 4) : [];
+        const syaratText = syarat.length > 0 ? syarat.map((s) => `  • ${s}`).join('\n') : '  • Kualifikasi sesuai pengumuman';
+        const benefit = Array.isArray(job.benefit) && job.benefit.length > 0 ? job.benefit.slice(0, 3).map((b) => `  ✓ ${b}`).join('\n') : '';
+        const kontak = job.kontak_wa ? `https://wa.me/${job.kontak_wa.replace(/[^0-9]/g, '')}` : (job.link_pendaftaran || (job.email ? `mailto:${job.email}` : 'Cek info lengkap di portal'));
+
+        return `📢 *INFO LOKER MADIUN RAYA #${idx + 1}*\n\n` +
+          `🏢 *Perusahaan*: ${perusahaan}\n` +
+          `💼 *Posisi*: *${posisi}*\n` +
+          `📍 *Penempatan*: ${wilayah}\n\n` +
+          `📋 *Kualifikasi Utama*:\n${syaratText}\n` +
+          (benefit ? `\n🎁 *Benefit / Fasilitas*:\n${benefit}\n` : '') +
+          `\n📲 *Cara Melamar / Kontak*:\n${kontak}\n` +
+          `\n🌐 *Portal Resmi Karmadi*: https://karmadi.vercel.app\n` +
+          `━━━━━━━━━━━━━━━━━━━━━`;
+      })
+      .join('\n\n');
+  };
+
+  const handleShareToWaChannel = (jobsToShare = lastPublishedJobs) => {
+    const list = jobsToShare && jobsToShare.length > 0 ? jobsToShare : (extractedJobs.length > 0 ? extractedJobs : [manualJob]);
+    const text = formatJobsForWaChannel(list);
+    if (!text) return;
+
+    // Salin teks ke clipboard agar admin bisa langsung paste di saluran
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setIsCopiedWaText(true);
+        setTimeout(() => setIsCopiedWaText(false), 4000);
+      }).catch(() => {});
+    }
+
+    // Buka Saluran WhatsApp di tab baru
+    window.open(KARMADI_WA_CHANNEL_URL, '_blank', 'noopener,noreferrer');
+    showToast('Teks loker tersalin ke clipboard! Membuka Saluran WhatsApp...', 'success');
+  };
 
   // Gemini API Key & Model State
   const [activeApiKey, setActiveApiKey] = useState('');
@@ -204,6 +257,8 @@ export default function AdminExtractor() {
     };
 
     publishJobs([jobToSave]);
+    setLastPublishedJobs([jobToSave]);
+    setIsPublished(true);
     showToast(`Lowongan "${manualJob.posisi}" berhasil diterbitkan ke Beranda!`, 'success');
     handleResetManualJob();
   };
@@ -362,6 +417,7 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
   const handlePublishAll = () => {
     if (extractedJobs.length === 0 || isLoading) return;
     publishJobs(extractedJobs);
+    setLastPublishedJobs([...extractedJobs]);
     setIsPublished(true);
     showToast(`Sukses! ${extractedJobs.length} loker berhasil diterbitkan ke portal pencari kerja!`);
   };
@@ -1296,27 +1352,60 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
 
             {/* Success Banner if Published */}
             {isPublished && (
-              <div className="mt-5 p-4 rounded-xl bg-emerald-500 text-white flex items-center justify-between shadow-lg animate-fade-in">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-white" />
+              <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg animate-fade-in space-y-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                      <Check className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h5 className="font-bold text-sm">
+                        {lastPublishedJobs.length || extractedJobs.length || 1} Lowongan Berhasil Diterbitkan!
+                      </h5>
+                      <p className="text-xs text-emerald-100">
+                        Lowongan telah aktif di portal Beranda dan siap disiarkan ke Saluran WhatsApp.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h5 className="font-bold text-sm">
-                      {extractedJobs.length} Lowongan Berhasil Diterbitkan!
-                    </h5>
-                    <p className="text-xs text-emerald-100">
-                      Semua lowongan sudah aktif dan dapat dilamar oleh para pencari kerja Kota Madiun.
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="text-xs font-semibold px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-lg transition-colors shadow-xs cursor-pointer shrink-0"
+                  >
+                    Unggah Baru
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="text-xs font-semibold px-3 py-1.5 bg-white text-emerald-800 rounded-lg hover:bg-emerald-50 transition-colors shadow-sm cursor-pointer"
-                >
-                  Unggah Poster Baru
-                </button>
+
+                {/* ── TOMBOL SINKRONISASI / SIAR KE SALURAN WHATSAPP ── */}
+                <div className="pt-2 border-t border-white/20 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleShareToWaChannel(lastPublishedJobs)}
+                    className="flex-1 py-3 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-98 text-white text-xs font-black transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer border border-white/30"
+                  >
+                    <Share2 className="w-4 h-4 text-white" />
+                    <span>📢 Siarkan Otomatis ke Saluran WhatsApp Karmadi</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = formatJobsForWaChannel(lastPublishedJobs.length > 0 ? lastPublishedJobs : extractedJobs);
+                      if (navigator?.clipboard?.writeText) {
+                        navigator.clipboard.writeText(text).then(() => {
+                          setIsCopiedWaText(true);
+                          setTimeout(() => setIsCopiedWaText(false), 3000);
+                          showToast('Teks pengumuman Saluran WA berhasil disalin!', 'success');
+                        });
+                      }
+                    }}
+                    className="py-3 px-3.5 rounded-xl bg-black/20 hover:bg-black/30 active:scale-98 text-white text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-white/10"
+                    title="Salin Teks Format Saluran WhatsApp"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>{isCopiedWaText ? 'Tersalin! ✓' : 'Salin Teks'}</span>
+                  </button>
+                </div>
               </div>
             )}
 
