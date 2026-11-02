@@ -33,6 +33,7 @@ import JobCardPublic from '../components/JobCardPublic';
 import JobDetailModal from '../components/JobDetailModal';
 import AdminLoginModal from '../components/AdminLoginModal';
 import PasangLokerModal from '../components/PasangLokerModal';
+import InstallPwaModal from '../components/InstallPwaModal';
 import { WILAYAH_OPTIONS, jobMatchesWilayah } from '../utils/regionUtils';
 import { isJobActive } from '../utils/dateUtils';
 
@@ -598,6 +599,9 @@ export default function Beranda() {
         isOpen={showPasangLoker}
         onClose={() => setShowPasangLoker(false)}
       />
+
+      {/* ── POP-UP INSTAL APLIKASI (PWA) PERSIS CONTOH REFERENSI ── */}
+      <InstallPwaModal />
 
       {/* ═══════════════════════════════════════════════════ */}
       {/* FOOTER                                              */}

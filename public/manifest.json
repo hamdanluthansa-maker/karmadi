@@ -1,0 +1,29 @@
+{
+  "name": "KARMADI — Info Loker Karesidenan Madiun",
+  "short_name": "KARMADI",
+  "description": "Portal Info Lowongan Kerja Terverifikasi Seputar Karesidenan Madiun",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2B4CE0",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/assets/logo-karmadi.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-karmadi.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/logo-karmadi.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
