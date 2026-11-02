@@ -10,11 +10,11 @@ import {
 } from 'lucide-react';
 
 /**
- * Komponen Pasang Aplikasi KARMADI ke Layar Utama HP (PWA)
- * - Modal otomatis saat pengunjung pertama kali membuka web.
- * - Tombol mengambang (Floating Action Button) di pojok kiri bawah agar
- *   pengguna kapan saja bisa membuka saran instalasi ke layar utama HP.
- * - Bahasa awam & ramah pengguna tanpa istilah teknis "PWA".
+ * Komponen Pasang Aplikasi KARMADI ke Layar Utama HP
+ * - Desain resmi dengan dominasi warna Cobalt Blue (#2B4CE0) & aksen Hijau Neon (#A3F742)
+ * - Menggunakan logo resmi KARMADI langsung (tanpa bingkai hijau berlebihan)
+ * - Floating Action Button yang kompak (diperkecil) di pojok kiri bawah
+ * - Bahasa awam & ramah pengguna tanpa istilah teknis "PWA"
  */
 export default function InstallPwaModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -115,6 +115,7 @@ export default function InstallPwaModal() {
     <>
       {/* ═══════════════════════════════════════════════════ */}
       {/* TOMBOL FLOATING / MENGAMBANG "PASANG APLIKASI"      */}
+      {/* UKURAN KOMPAK, DOMINASI BIRU + AKSEN HIJAU NEON     */}
       {/* ═══════════════════════════════════════════════════ */}
       {!isInstalled && (
         <button
@@ -123,23 +124,23 @@ export default function InstallPwaModal() {
             setShowIosGuide(false);
             setIsOpen(true);
           }}
-          className="fixed bottom-6 left-5 z-40 group flex items-center gap-2.5 bg-[#00875A] hover:bg-[#00704A] text-white pl-3.5 pr-4 py-2.5 rounded-full shadow-xl shadow-emerald-950/30 border border-emerald-300/40 active:scale-95 transition-all duration-300 cursor-pointer animate-fade-in"
+          className="fixed bottom-6 left-4 sm:left-5 z-40 group flex items-center gap-2 bg-[#2B4CE0] hover:bg-[#1E3AB8] text-white pl-2.5 pr-3 py-1.5 rounded-full shadow-lg shadow-blue-900/30 border border-blue-400/40 active:scale-95 transition-all duration-300 cursor-pointer animate-fade-in"
           title="Pasang Aplikasi ke Layar Utama HP"
           aria-label="Pasang Aplikasi ke Layar Utama HP"
         >
-          {/* Indikator Ping Kuning Keemasan */}
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-300 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-400"></span>
+          {/* Indikator Ping Hijau Neon */}
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#A3F742] opacity-80"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#A3F742]"></span>
           </span>
 
-          <Download className="w-4 h-4 stroke-[2.5]" />
-          <span className="text-xs font-black tracking-wide">Pasang Aplikasi</span>
+          <Download className="w-3.5 h-3.5 stroke-[2.5] text-[#A3F742]" />
+          <span className="text-[11px] font-bold tracking-tight">Pasang Aplikasi</span>
         </button>
       )}
 
       {/* ═══════════════════════════════════════════════════ */}
-      {/* MODAL SARAN PASANG APLIKASI (PERSIS REFERENSI)      */}
+      {/* MODAL SARAN PASANG APLIKASI (BRANDING BIRU KARMADI) */}
       {/* ═══════════════════════════════════════════════════ */}
       {isOpen && (
         <div
@@ -160,25 +161,19 @@ export default function InstallPwaModal() {
               <X className="w-5 h-5 stroke-[2.2]" />
             </button>
 
-            {/* ── IKON APLIKASI TERPUSAT (BORDER TEAL/MINT HALUS) ── */}
-            <div className="flex justify-center mt-1 mb-4">
-              <div className="w-20 h-20 rounded-3xl border-2 border-emerald-400/35 p-1.5 flex items-center justify-center bg-emerald-50/60 shadow-inner">
-                <div className="w-full h-full rounded-2xl bg-gradient-to-br from-[#00875A] to-[#046142] p-2.5 shadow-md shadow-emerald-900/25 flex items-center justify-center relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-white/10 opacity-30 group-hover:opacity-60 transition-opacity" />
-                  <img
-                    src="/assets/logo-karmadi.png"
-                    alt="Logo KARMADI"
-                    className="w-full h-full object-contain drop-shadow brightness-0 invert relative z-10"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <Zap className="w-7 h-7 text-amber-300 fill-amber-300 relative z-10" />
-                </div>
-              </div>
+            {/* ── LOGO RESMI KARMADI (BERSIH & JELAS) ── */}
+            <div className="flex justify-center mt-1 mb-3.5">
+              <img
+                src="/assets/logo-karmadi.svg"
+                alt="Logo KARMADI"
+                className="w-18 h-18 sm:w-20 sm:h-20 object-contain drop-shadow-md rounded-2xl"
+                onError={(e) => {
+                  e.currentTarget.src = '/assets/logo-karmadi.png';
+                }}
+              />
             </div>
 
-            {/* ── BADGE KUNING SARAN PASANG APLIKASI ── */}
+            {/* ── BADGE SARAN PASANG APLIKASI (KUNING AMBER / EMAS) ── */}
             <div className="inline-block bg-[#F59E0B] text-slate-950 font-black text-[11px] sm:text-xs px-4 py-1.5 rounded-full shadow-sm tracking-wider uppercase">
               SARAN PASANG APLIKASI
             </div>
@@ -188,12 +183,12 @@ export default function InstallPwaModal() {
               Akses lebih cepat langsung dari layar utama HP Anda!
             </p>
 
-            {/* ── 3 POIN KEUNGGULAN (KOTAK HIJAU MUDA ELEGAN) ── */}
+            {/* ── 3 POIN KEUNGGULAN (SOFT BLUE THEME + IKON BIRU AKSEN NEON) ── */}
             <div className="space-y-2.5 text-left mb-5">
               {/* Poin 1 */}
-              <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200/80 flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-[#00875A] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                  <Zap className="w-4 h-4 fill-white text-white" />
+              <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200/70 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#2B4CE0] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                  <Zap className="w-4 h-4 text-[#A3F742] fill-[#A3F742]" />
                 </div>
                 <div className="text-xs">
                   <strong className="text-slate-900 font-bold block mb-0.5">
@@ -206,9 +201,9 @@ export default function InstallPwaModal() {
               </div>
 
               {/* Poin 2 */}
-              <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200/80 flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-[#00875A] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                  <Smartphone className="w-4 h-4 text-white" />
+              <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200/70 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#2B4CE0] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                  <Smartphone className="w-4 h-4 text-[#A3F742]" />
                 </div>
                 <div className="text-xs">
                   <strong className="text-slate-900 font-bold block mb-0.5">
@@ -221,9 +216,9 @@ export default function InstallPwaModal() {
               </div>
 
               {/* Poin 3 */}
-              <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200/80 flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-[#00875A] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                  <Feather className="w-4 h-4 text-white" />
+              <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200/70 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#2B4CE0] text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                  <Feather className="w-4 h-4 text-[#A3F742]" />
                 </div>
                 <div className="text-xs">
                   <strong className="text-slate-900 font-bold block mb-0.5">
@@ -238,8 +233,8 @@ export default function InstallPwaModal() {
 
             {/* Panduan Khusus iOS Safari jika terdeteksi */}
             {showIosGuide && (
-              <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-left text-xs text-emerald-950 space-y-2 animate-fade-in">
-                <p className="font-bold flex items-center gap-1.5 text-[#00875A]">
+              <div className="mb-4 p-3.5 rounded-2xl bg-blue-50 border border-blue-300 text-left text-xs text-blue-950 space-y-2 animate-fade-in">
+                <p className="font-bold flex items-center gap-1.5 text-[#2B4CE0]">
                   <Smartphone className="w-4 h-4" />
                   <span>Cara Pasang di iPhone / iPad:</span>
                 </p>
@@ -258,14 +253,14 @@ export default function InstallPwaModal() {
               </div>
             )}
 
-            {/* ── TOMBOL AKSI UTAMA ── */}
+            {/* ── TOMBOL AKSI UTAMA (BIRU COBALT KARMADI + AKSEN NEON) ── */}
             <div className="space-y-2">
               <button
                 type="button"
                 onClick={handleInstallClick}
-                className="w-full py-3.5 px-5 rounded-2xl bg-[#00875A] hover:bg-[#00704A] active:scale-[0.98] text-white font-extrabold text-sm tracking-wide shadow-lg shadow-emerald-700/25 flex items-center justify-center gap-2 transition-all cursor-pointer border border-emerald-600/40"
+                className="w-full py-3.5 px-5 rounded-2xl bg-[#2B4CE0] hover:bg-[#1E3AB8] active:scale-[0.98] text-white font-extrabold text-sm tracking-wide shadow-lg shadow-[#2B4CE0]/30 flex items-center justify-center gap-2 transition-all cursor-pointer border border-blue-400/40"
               >
-                <Download className="w-4 h-4 stroke-[2.5]" />
+                <Download className="w-4 h-4 stroke-[2.5] text-[#A3F742]" />
                 <span>Pasang Aplikasi Sekarang (Gratis)</span>
               </button>
 
