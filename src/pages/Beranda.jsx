@@ -26,6 +26,7 @@ import {
   MessageCircle,
   Lock,
   Zap,
+  ArrowUp,
 } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
@@ -64,57 +65,28 @@ export default function Beranda() {
   const [selectedJob, setSelectedJob] = useState(null);
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [showPasangLoker, setShowPasangLoker] = useState(false);
-  const [backToastMessage, setBackToastMessage] = useState('');
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const chipScrollRef = useRef(null);
-  const lastBackPressTimeRef = useRef(0);
 
-  // ── Smart Back Handler: Scroll ke Atas saat Back 1x, Keluar saat Back 2x Cepat ──
+  // Monitor posisi scroll untuk menampilkan tombol Floating "Kembali ke Atas"
   useEffect(() => {
-    // Selalu pastikan ada trap state di awal agar browser tidak langsung exit saat tombol Back ditekan
-    const trapStateKey = 'karmadi_beranda_trap';
-    window.history.pushState({ [trapStateKey]: true }, '');
-
-    const handlePopState = (e) => {
-      // Jika salah satu modal (loker / pasang loker / login) sedang terbuka, jangan tangani di sini
-      if (selectedJob || showPasangLoker || showAdminLogin) {
-        return;
-      }
-
+    const handleScroll = () => {
       const currentScrollY =
         window.pageYOffset ||
         window.scrollY ||
         document.documentElement.scrollTop ||
         document.body.scrollTop ||
         0;
-
-      // 1. KASUS A: Pengguna sedang scroll di bawah (> 100px)
-      // Tindakan: Kembalikan mulus ke posisi atas, TANCAPKAN KEMBALI trap state agar tidak keluar
-      if (currentScrollY > 100) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        window.history.pushState({ [trapStateKey]: true }, '');
-        return;
-      }
-
-      // 2. KASUS B: Pengguna sudah berada di atas (currentScrollY <= 100px)
-      const now = Date.now();
-      const elapsed = now - lastBackPressTimeRef.current;
-
-      // Jika tombol back dipencet 2x berturut-turut dalam rentang 2 detik -> Izinkan keluar browser
-      if (elapsed < 2000) {
-        setBackToastMessage('');
-        window.history.back();
-      } else {
-        // Pencetan pertama saat di posisi atas -> Tampilkan toast pemberitahuan & kunci kembali trap state
-        lastBackPressTimeRef.current = now;
-        setBackToastMessage('Tekan sekali lagi untuk keluar dari KARMADI');
-        window.history.pushState({ [trapStateKey]: true }, '');
-        setTimeout(() => setBackToastMessage(''), 2000);
-      }
+      setShowBackToTop(currentScrollY > 400);
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [selectedJob, showPasangLoker, showAdminLogin]);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Auto-open modal jika URL memuat parameter loker (?loker=... atau ?q=...)
   useEffect(() => {
@@ -653,11 +625,17 @@ export default function Beranda() {
       {/* ── POP-UP INSTAL APLIKASI (PWA) PERSIS CONTOH REFERENSI ── */}
       <InstallPwaModal />
 
-      {/* ── TOAST INDIKATOR BACK 2X KELUAR ── */}
-      {backToastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-2xl backdrop-blur-sm animate-fade-in border border-slate-700/80 pointer-events-none">
-          {backToastMessage}
-        </div>
+      {/* ── TOMBOL FLOATING "KEMBALI KE ATAS" (STANDAR APLIKASI MODERN) ── */}
+      {showBackToTop && (
+        <button
+          type="button"
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-5 z-40 p-3.5 rounded-full bg-[#2B4CE0] hover:bg-[#1E3AB8] text-white shadow-xl shadow-[#2B4CE0]/35 transition-all duration-300 animate-scale-up cursor-pointer active:scale-95 flex items-center justify-center border border-white/20"
+          title="Kembali ke atas"
+          aria-label="Kembali ke atas"
+        >
+          <ArrowUp className="w-5 h-5 stroke-[2.5]" />
+        </button>
       )}
 
       {/* ═══════════════════════════════════════════════════ */}
