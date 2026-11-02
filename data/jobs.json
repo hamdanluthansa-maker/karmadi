@@ -57,7 +57,7 @@
       "warna_primer": "#f1b814",
       "kontak_wa": "6285785317350",
       "email": "",
-      "link_pendaftaran": "https://www.estehpoci.id",
+      "link_pendaftaran": "",
       "is_walk_in": false,
       "alamat_walk_in": "",
       "wilayah": "Kota Madiun",
@@ -992,5 +992,5 @@
       "tanggal": "2026-11-02"
     }
   ],
-  "updatedAt": 1793622202765
+  "updatedAt": 1793622358001
 }
