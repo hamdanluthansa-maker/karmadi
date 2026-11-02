@@ -70,41 +70,44 @@ export default function Beranda() {
 
   // ── Smart Back Handler: Scroll ke Atas saat Back 1x, Keluar saat Back 2x Cepat ──
   useEffect(() => {
-    // Tambahkan initial state agar tombol back HP bisa di-intercept
-    if (!window.history.state?.berandaReady) {
-      window.history.replaceState({ berandaReady: true, berandaLevel: 1 }, '');
-      window.history.pushState({ berandaReady: true, berandaLevel: 2 }, '');
-    }
+    // Selalu pastikan ada trap state di awal agar browser tidak langsung exit saat tombol Back ditekan
+    const trapStateKey = 'karmadi_beranda_trap';
+    window.history.pushState({ [trapStateKey]: true }, '');
 
     const handlePopState = (e) => {
-      // Jika modal loker, pasang loker, atau login sedang terbuka, serahkan ke handler modal masing-masing
+      // Jika salah satu modal (loker / pasang loker / login) sedang terbuka, jangan tangani di sini
       if (selectedJob || showPasangLoker || showAdminLogin) {
         return;
       }
 
-      const currentScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+      const currentScrollY =
+        window.pageYOffset ||
+        window.scrollY ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0;
 
-      // 1. KASUS A: Pengguna sedang scroll di bawah (> 180px) -> Kembalikan ke paling atas
-      if (currentScrollY > 180) {
+      // 1. KASUS A: Pengguna sedang scroll di bawah (> 100px)
+      // Tindakan: Kembalikan mulus ke posisi atas, TANCAPKAN KEMBALI trap state agar tidak keluar
+      if (currentScrollY > 100) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        // Jaga history stack agar pengguna tidak langsung keluar
-        window.history.pushState({ berandaReady: true, berandaLevel: 2 }, '');
+        window.history.pushState({ [trapStateKey]: true }, '');
         return;
       }
 
-      // 2. KASUS B: Pengguna sudah di paling atas (atau scroll <= 180px)
+      // 2. KASUS B: Pengguna sudah berada di atas (currentScrollY <= 100px)
       const now = Date.now();
       const elapsed = now - lastBackPressTimeRef.current;
 
-      // Jika ditekan 2x dalam rentang 2 detik -> Biarkan keluar dari aplikasi/browser
+      // Jika tombol back dipencet 2x berturut-turut dalam rentang 2 detik -> Izinkan keluar browser
       if (elapsed < 2000) {
-        // Izinkan browser melakukan back murni (keluar laman)
+        setBackToastMessage('');
         window.history.back();
       } else {
-        // Tekanan pertama di posisi atas -> Tampilkan toast instruksi dan dorong state kembali
+        // Pencetan pertama saat di posisi atas -> Tampilkan toast pemberitahuan & kunci kembali trap state
         lastBackPressTimeRef.current = now;
         setBackToastMessage('Tekan sekali lagi untuk keluar dari KARMADI');
-        window.history.pushState({ berandaReady: true, berandaLevel: 2 }, '');
+        window.history.pushState({ [trapStateKey]: true }, '');
         setTimeout(() => setBackToastMessage(''), 2000);
       }
     };
