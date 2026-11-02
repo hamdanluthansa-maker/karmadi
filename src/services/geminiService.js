@@ -79,9 +79,9 @@ export const POPULAR_GEMINI_MODELS = [
     keyUrl: 'https://aistudio.google.com/app/apikey'
   },
   {
-    id: 'gemini-1.5-flash',
+    id: 'gemini-2.0-flash-lite',
     provider: 'gemini',
-    name: 'Google: Gemini 1.5 Flash (Stabil & Terpercaya)',
+    name: 'Google: Gemini 2.0 Flash-Lite (Cepat & Ringan)',
     badge: 'Stabil',
     keyPrefix: 'AIzaSy',
     keyUrl: 'https://aistudio.google.com/app/apikey'
@@ -104,6 +104,40 @@ export function detectProviderFromKey(apiKey, modelName = '') {
   return 'gemini';
 }
 
+function getLocalAiConfigEndpoint() {
+  if (typeof window === 'undefined') return '/api/ai-config';
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocal ? '/api/ai-config' : 'http://localhost:5173/api/ai-config';
+}
+
+export async function syncAiConfigFromLocalServer() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const res = await fetch(getLocalAiConfigEndpoint());
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok || !ct.includes('application/json')) return null;
+    const data = await res.json();
+    const currentLocalKey = getGeminiApiKey();
+    if (!currentLocalKey && data?.apiKey) {
+      localStorage.setItem(STORAGE_KEY, data.apiKey);
+      if (data.activeModel) {
+        localStorage.setItem(STORAGE_MODEL_KEY, JSON.stringify({ model: data.activeModel, version: 'v1beta' }));
+      }
+      return data;
+    }
+    if (currentLocalKey && !data?.apiKey) {
+      fetch(getLocalAiConfigEndpoint(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: currentLocalKey, activeModel: getActiveGeminiModel() }),
+      }).catch(() => {});
+    }
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function getGeminiApiKey() {
   if (typeof window === 'undefined') return '';
   return (
@@ -116,12 +150,18 @@ export function getGeminiApiKey() {
 
 export function setGeminiApiKey(key) {
   if (typeof window === 'undefined') return;
-  if (!key) {
+  const cleanKey = (key || '').trim();
+  if (!cleanKey) {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LEGACY_STORAGE_KEY);
   } else {
-    localStorage.setItem(STORAGE_KEY, key.trim());
+    localStorage.setItem(STORAGE_KEY, cleanKey);
   }
+  fetch(getLocalAiConfigEndpoint(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: cleanKey, activeModel: getActiveGeminiModel() }),
+  }).catch(() => {});
 }
 
 export function getActiveGeminiModel() {
@@ -133,7 +173,7 @@ export function getActiveGeminiModel() {
     if (stored) {
       const parsed = JSON.parse(stored);
       const modelStr = typeof parsed === 'string' ? parsed : parsed?.model;
-      if (modelStr && (modelStr.includes('llama-4-scout') || modelStr.includes('gemini-2.0-flash'))) {
+      if (modelStr === 'gemini-2.0-flash' || modelStr === 'gemini-1.5-flash') {
         return 'gemini-2.5-flash';
       }
       if (modelStr) return modelStr;
@@ -146,6 +186,11 @@ export function setActiveGeminiModel(modelName) {
   if (typeof window === 'undefined') return;
   const clean = (modelName || 'gemini-2.5-flash').trim().replace(/^models\//, '');
   localStorage.setItem(STORAGE_MODEL_KEY, JSON.stringify({ model: clean, version: 'v1beta' }));
+  fetch(getLocalAiConfigEndpoint(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: getGeminiApiKey(), activeModel: clean }),
+  }).catch(() => {});
 }
 
 const EXTRACTION_SYSTEM_PROMPT = `Kamu adalah sistem AI Karmadi, platform info lowongan kerja seputar Karesidenan Madiun & rekrutmen swasta profesional.
@@ -566,27 +611,74 @@ export async function testGeminiApiKey(key, requestedModel = null) {
 }
 
 /**
+ * Sanitasi & Parsing JSON Tahan Banting dari Respons LLM
+ * Mampu memperbaiki literal newline di dalam string ("catatan"), trailing comma, dan markdown fence
+ */
+export function repairAndParseJson(rawText) {
+  let cleaned = (rawText || '').trim();
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+
+  // Cari blok array JSON [...] atau objek JSON {...} yang mengandung struktur objek loker
+  const arrayObjMatch = cleaned.match(/\[\s*\{[\s\S]*\}\s*\]/);
+  if (arrayObjMatch) {
+    cleaned = arrayObjMatch[0];
+  } else {
+    const objMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (objMatch) {
+      cleaned = objMatch[0];
+    }
+  }
+
+  // Sanitasi karakter newline/tab mentah di dalam string literal JSON agar tidak memicu SyntaxError
+  let sanitized = '';
+  let inString = false;
+  let isEscaped = false;
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (isEscaped) {
+      sanitized += ch;
+      isEscaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      sanitized += ch;
+      isEscaped = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      sanitized += ch;
+      continue;
+    }
+    if (inString) {
+      if (ch === '\n') {
+        sanitized += '\\n';
+        continue;
+      }
+      if (ch === '\r') {
+        continue;
+      }
+      if (ch === '\t') {
+        sanitized += ' ';
+        continue;
+      }
+    }
+    sanitized += ch;
+  }
+
+  // Hapus trailing comma sebelum ] atau }
+  sanitized = sanitized.replace(/,\s*([\]}])/g, '$1');
+
+  return JSON.parse(sanitized);
+}
+
+/**
  * Helper mem-parsing JSON array dari teks respons LLM apa pun
  */
 function parseJobsJsonResponse(rawText, engineLabel, fallbackColor = '#0284c7') {
-  let cleaned = (rawText || '').trim();
-  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-
-  if (cleaned.startsWith('```json')) {
-    cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/, '');
-  } else if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```\s*/, '').replace(/\s*```$/, '');
-  }
-
-  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
-    cleaned = arrayMatch[0];
-  } else {
-    const objMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (objMatch) cleaned = objMatch[0];
-  }
-
-  const parsed = JSON.parse(cleaned);
+  const parsed = repairAndParseJson(rawText);
   const jobsArray = Array.isArray(parsed)
     ? parsed
     : Array.isArray(parsed?.jobs)
@@ -608,6 +700,8 @@ function parseJobsJsonResponse(rawText, engineLabel, fallbackColor = '#0284c7') 
       syarat:
         Array.isArray(j.syarat) && j.syarat.length > 0
           ? j.syarat
+          : typeof j.syarat === 'string' && j.syarat.trim()
+          ? j.syarat.split('\n').map((s) => s.trim()).filter(Boolean)
           : ['Kualifikasi dapat ditanyakan langsung ke kontak perusahaan'],
       benefit: Array.isArray(j.benefit)
         ? j.benefit
@@ -638,7 +732,13 @@ function parseJobsJsonResponse(rawText, engineLabel, fallbackColor = '#0284c7') 
  * Ekstraksi loker multimodal (Mendukung Groq Vision / Hybrid 70B, OpenRouter Vision, dan Google Gemini)
  */
 export async function extractWithGeminiVision(base64DataUrl, onProgress, getOcrDataFn = null) {
-  const apiKey = getGeminiApiKey();
+  let apiKey = getGeminiApiKey();
+  if (!apiKey) {
+    const synced = await syncAiConfigFromLocalServer();
+    if (synced?.apiKey) {
+      apiKey = synced.apiKey;
+    }
+  }
   if (!apiKey) {
     throw new Error('NO_API_KEY');
   }
@@ -651,11 +751,18 @@ export async function extractWithGeminiVision(base64DataUrl, onProgress, getOcrD
   // ════════════════════════════════════════════════════════════════════
   if (provider === 'groq') {
     const { visionModels, textModels } = await getGroqAccountModels(apiKey);
+    const groqVisionList = [
+      ...new Set([
+        ...visionModels,
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'meta-llama/llama-4-maverick-17b-128e-instruct',
+      ]),
+    ];
 
-    // 1. Jika ada model Vision murni di akun Groq pengguna, coba kirim gambar langsung
-    for (const vModel of visionModels.slice(0, 3)) {
+    // 1. Coba model Vision murni di akun Groq pengguna terlebih dahulu
+    for (const vModel of groqVisionList.slice(0, 4)) {
       try {
-        if (onProgress) onProgress(`Memindai gambar dengan Groq Vision (${vModel})...`);
+        if (onProgress) onProgress(`Memindai gambar dengan Groq Vision (${vModel.split('/')[1] || vModel})...`);
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -688,14 +795,14 @@ export async function extractWithGeminiVision(base64DataUrl, onProgress, getOcrD
       } catch (e) {}
     }
 
-    // 2. Hybrid Vision + Groq Llama 3.3 70B (Menggunakan string content sehingga 100% bebas error "messages[0].content must be a string")
+    // 2. Hybrid Vision + Groq Llama 3.3 70B (Menggunakan string content sehingga 100% bebas error)
     if (getOcrDataFn) {
       if (onProgress) onProgress('Membaca teks visual poster untuk dianalisis Groq Llama 3.3 70B...');
       const ocrData = await getOcrDataFn();
       const rawOcrText = (ocrData?.rawText || '').trim();
       const domColor = ocrData?.dominantColor || '#0284c7';
 
-      if (rawOcrText.length > 10) {
+      if (rawOcrText.length > 5) {
         let lastErr = '';
         for (const tModel of textModels.slice(0, 3)) {
           try {
@@ -722,7 +829,7 @@ ${rawOcrText}
                 messages: [
                   {
                     role: 'user',
-                    content: hybridPrompt // STRING MURNI (100% Kompatibel dengan semua model Groq)
+                    content: hybridPrompt
                   }
                 ]
               })
@@ -815,16 +922,21 @@ ${rawOcrText}
   }
 
   const cleanSelected =
-    selectedModel && selectedModel !== 'gemini-2.0-flash' && !selectedModel.includes('/')
+    selectedModel &&
+    selectedModel !== 'gemini-2.0-flash' &&
+    selectedModel !== 'gemini-1.5-flash' &&
+    !selectedModel.includes('/')
       ? selectedModel
       : 'gemini-2.5-flash';
   const candidateModels = [
     cleanSelected,
     'gemini-2.5-flash',
     'gemini-2.5-flash-lite',
-    'gemini-1.5-flash'
+    'gemini-2.0-flash-lite'
   ];
-  const uniqueModels = [...new Set(candidateModels)].filter((m) => m !== 'gemini-2.0-flash');
+  const uniqueModels = [...new Set(candidateModels)].filter(
+    (m) => m !== 'gemini-2.0-flash' && m !== 'gemini-1.5-flash'
+  );
 
   let rawText = '';
   let lastError = null;
@@ -838,14 +950,6 @@ ${rawOcrText}
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 35000);
-
-      const genConfig = {
-        temperature: 0.1,
-        response_mime_type: 'application/json'
-      };
-      if (currentModel.startsWith('gemini-2.5-flash')) {
-        genConfig.thinkingConfig = { thinkingBudget: 0 };
-      }
 
       const res = await fetch(url, {
         method: 'POST',
@@ -866,7 +970,10 @@ ${rawOcrText}
               ]
             }
           ],
-          generationConfig: genConfig
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+          }
         })
       });
 
@@ -874,8 +981,11 @@ ${rawOcrText}
 
       if (res.ok) {
         const data = await res.json();
-        rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (rawText) {
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const answerPart = parts.find((p) => !p.thought && p.text) || parts[0];
+        const candidateText = answerPart?.text;
+        if (candidateText) {
+          rawText = candidateText;
           successfulModel = currentModel;
           setActiveGeminiModel(currentModel);
           break;
@@ -884,7 +994,7 @@ ${rawOcrText}
         const err = await res.json().catch(() => ({}));
         lastError = err.error?.message || `HTTP ${res.status}`;
         if (res.status === 429) {
-          await new Promise((r) => setTimeout(r, 1500));
+          await new Promise((r) => setTimeout(r, 1200));
         }
       }
     } catch (e) {
@@ -897,4 +1007,113 @@ ${rawOcrText}
   }
 
   return parseJobsJsonResponse(rawText, `Gemini Vision (${successfulModel})`);
+}
+
+/**
+ * Ekstraksi Teks Loker Mentah Menggunakan AI (Mendukung Groq, OpenRouter, & Google Gemini)
+ */
+export async function extractJobTextWithAI(rawText, systemPrompt) {
+  let apiKey = getGeminiApiKey();
+  if (!apiKey) {
+    const synced = await syncAiConfigFromLocalServer();
+    if (synced?.apiKey) apiKey = synced.apiKey;
+  }
+  if (!apiKey) return null;
+
+  const selectedModel = getActiveGeminiModel();
+  const provider = detectProviderFromKey(apiKey, selectedModel);
+  const fullPrompt = `${systemPrompt}\n\nTeks Lowongan Mentah:\n"""\n${rawText}\n"""`;
+
+  if (provider === 'groq') {
+    const { textModels } = await getGroqAccountModels(apiKey);
+    for (const tModel of textModels.slice(0, 3)) {
+      try {
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: tModel,
+            temperature: 0.1,
+            messages: [{ role: 'user', content: fullPrompt }]
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return repairAndParseJson(content);
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  if (provider === 'openrouter') {
+    const candidates = await getOpenRouterVisionCandidates(
+      selectedModel.includes('/') ? selectedModel : 'google/gemma-3-27b-it:free'
+    );
+    for (const m of candidates.slice(0, 4)) {
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiKey}`,
+            'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173',
+            'X-Title': 'Karmadi - Info Loker Karesidenan Madiun'
+          },
+          body: JSON.stringify({
+            model: m,
+            temperature: 0.1,
+            messages: [{ role: 'user', content: fullPrompt }]
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return repairAndParseJson(content);
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  // Google Gemini
+  const cleanSelected =
+    selectedModel &&
+    selectedModel !== 'gemini-2.0-flash' &&
+    selectedModel !== 'gemini-1.5-flash' &&
+    !selectedModel.includes('/')
+      ? selectedModel
+      : 'gemini-2.5-flash';
+  const models = [...new Set([cleanSelected, 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'])];
+
+  for (const m of models) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const parts = data.candidates?.[0]?.content?.parts || [];
+        const answerPart = parts.find((p) => !p.thought && p.text) || parts[0];
+        if (answerPart?.text) {
+          return repairAndParseJson(answerPart.text);
+        }
+      }
+    } catch (e) {}
+  }
+
+  return null;
 }

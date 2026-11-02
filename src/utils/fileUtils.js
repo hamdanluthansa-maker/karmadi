@@ -41,6 +41,8 @@ export async function fileToPersistentDataUrl(file) {
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
 
           // Simpan sebagai JPEG berkualitas tinggi (0.85)

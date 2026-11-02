@@ -14,9 +14,14 @@ function jsonStoragePlugin() {
   const dataFile = path.resolve(dataDir, 'jobs.json');
   const publicDir = path.resolve(__dirname, 'public');
   const publicJobsFile = path.resolve(publicDir, 'jobs.json');
+  const privateDataDir = path.resolve(__dirname, '.data');
+  const aiConfigFile = path.resolve(privateDataDir, 'ai-config.json');
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
+  }
+  if (!fs.existsSync(privateDataDir)) {
+    fs.mkdirSync(privateDataDir, { recursive: true });
   }
 
   const writeJobsToDisk = (payload) => {
@@ -74,6 +79,52 @@ function jsonStoragePlugin() {
             } catch (err) {
               res.statusCode = 500;
               res.end(JSON.stringify({ error: err.message }));
+            }
+          });
+          return;
+        }
+
+        if (req.url === '/api/ai-config' && req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json');
+          if (fs.existsSync(aiConfigFile)) {
+            try {
+              const content = fs.readFileSync(aiConfigFile, 'utf-8');
+              res.end(content || JSON.stringify({ apiKey: '', model: '' }));
+              return;
+            } catch (err) {
+              res.end(JSON.stringify({ apiKey: '', model: '' }));
+              return;
+            }
+          }
+          res.end(JSON.stringify({ apiKey: '', model: '' }));
+          return;
+        }
+
+        if (req.url === '/api/ai-config' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => {
+            body += chunk;
+          });
+          req.on('end', () => {
+            try {
+              const parsed = body ? JSON.parse(body) : {};
+              let existing = { apiKey: '', model: '' };
+              if (fs.existsSync(aiConfigFile)) {
+                try {
+                  existing = JSON.parse(fs.readFileSync(aiConfigFile, 'utf-8'));
+                } catch {}
+              }
+              const nextConfig = {
+                apiKey: typeof parsed.apiKey === 'string' ? parsed.apiKey.trim() : existing.apiKey || '',
+                model: typeof parsed.model === 'string' ? parsed.model.trim() : existing.model || '',
+                updatedAt: Date.now(),
+              };
+              fs.writeFileSync(aiConfigFile, JSON.stringify(nextConfig, null, 2), 'utf-8');
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ success: true }));
+            } catch (err) {
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err.message }));
             }
           });
           return;

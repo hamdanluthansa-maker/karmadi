@@ -1,7 +1,7 @@
 import { createWorker } from 'tesseract.js';
 import { extractDominantColor, parsePosterText } from '../utils/imageExtractor';
 import { fileToPersistentDataUrl } from '../utils/fileUtils';
-import { getGeminiApiKey, extractWithGeminiVision } from './geminiService';
+import { getGeminiApiKey, extractWithGeminiVision, syncAiConfigFromLocalServer } from './geminiService';
 import { detectWilayah } from '../utils/regionUtils';
 
 // Cache worker OCR agar proses multiple gambar tidak perlu re-load engine berkali-kali
@@ -45,7 +45,7 @@ export async function extractJobsFromImage(imageFileOrUrl, onProgress, filename 
       const worker = await getSharedOcrWorker(onProgress);
       if (worker) {
         if (onProgress) onProgress('Membaca teks visual dan entitas poster...');
-        const ret = await worker.recognize(imageFileOrUrl);
+        const ret = await worker.recognize(imageUrl || imageFileOrUrl);
         const ocrText = ret?.data?.text || '';
         text = `${text}\n${ocrText}`.trim();
       }
@@ -58,7 +58,11 @@ export async function extractJobsFromImage(imageFileOrUrl, onProgress, filename 
   };
 
   // 2. CEK MULTI-PROVIDER VISION AI TERLEBIH DAHULU (Groq / OpenRouter / Google Gemini)
-  const geminiApiKey = getGeminiApiKey();
+  let geminiApiKey = getGeminiApiKey();
+  if (!geminiApiKey) {
+    const synced = await syncAiConfigFromLocalServer();
+    if (synced?.apiKey) geminiApiKey = synced.apiKey;
+  }
   if (geminiApiKey) {
     try {
       if (onProgress) onProgress('Menghubungkan ke Vision AI...');
@@ -801,6 +805,8 @@ export async function extractJobsFromImage(imageFileOrUrl, onProgress, filename 
         ? 'Kesehatan'
         : 'Umum',
       syarat: parsed.syarat && parsed.syarat.length > 0 ? parsed.syarat : ['Kualifikasi dapat ditanyakan ke pihak perusahaan'],
+      benefit: Array.isArray(parsed.benefit) ? parsed.benefit : [],
+      catatan: parsed.catatan || '',
       warna_primer: dominantColor || '#0284c7',
       kontak_wa: parsed.kontak_wa || '',
       email: parsed.email || '',

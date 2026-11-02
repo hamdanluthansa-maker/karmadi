@@ -1,6 +1,6 @@
 import { detectWilayah } from '../utils/regionUtils';
 import { getTodayDateString, addMonths } from '../utils/dateUtils';
-import { getGeminiApiKey, getActiveGeminiModel } from './geminiService';
+import { getGeminiApiKey, extractJobTextWithAI } from './geminiService';
 
 /**
  * textJobParser — Layanan Cerdas Pembedah Teks Loker Mentah (Broadcast WA, Facebook, Catatan)
@@ -170,16 +170,21 @@ export function parseRawJobTextLocally(rawText) {
       continue;
     }
 
-    // Ekstraksi item berdasarkan seksi aktif
-    const isBullet = /^[-*•–—]\s*|\d+[\.\)]\s*/.test(l);
-    const cleanedItem = l.replace(/^[-*•–—]\s*|\d+[\.\)]\s*/, '').trim();
+    // Ekstraksi item berdasarkan seksi aktif (mendukung simbol bullet biasa maupun emoji WA)
+    const isBullet = /^(?:[-*•–—›»>▪▫◦‣⁃✅✔☑️📌🔹🔸🔺▪️▫️👉✦✧]|\d+[\.\)])\s*/u.test(l);
+    const cleanedItem = l.replace(/^(?:[-*•–—›»>▪▫◦‣⁃✅✔☑️📌🔹🔸🔺▪️▫️👉✦✧]|\d+[\.\)])\s*/u, '').trim();
 
     // Cek apakah baris ini memuat benefit (gaji, uang makan, lembur, mess, bonus)
-    const isBenefitItem = /gaji|upah|uang lembur|uang makan|insentif|bonus|komisi|tunjangan|bpjs|mess|fasilitas makan|dapat makan/i.test(cleanedItem);
+    const isBenefitItem = /\b(gaji|upah|uang lembur|uang makan|insentif|bonus|komisi|tunjangan|bpjs|mess|fasilitas makan|dapat makan|rp\.?\s*\d+|\d+\s*rb\b)/i.test(cleanedItem);
+    const isSyaratKeyword = /\b(pria|wanita|laki|perempuan|usia|umur|minimal|min\.|sma|smk|smp|d3|s1|jujur|rajin|tekun|disiplin|pengalaman|merokok|lembur|sim\s*[abc]|berpenampilan|komunikatif|shift|domisili|sehat| tanggung jawab|niat kerja)\b/i.test(cleanedItem);
 
     if (currentSection === 'syarat') {
       if (cleanedItem && !cleanedItem.startsWith('+62') && !cleanedItem.startsWith('08')) {
-        syaratList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
+        if (isBenefitItem) {
+          benefitList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
+        } else {
+          syaratList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
+        }
       }
     } else if (currentSection === 'benefit') {
       if (cleanedItem) {
@@ -190,14 +195,19 @@ export function parseRawJobTextLocally(rawText) {
         if (isBenefitItem) {
           benefitList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
         } else {
-          catatanLines.push(l);
+          catatanLines.push(cleanedItem);
         }
       }
-    } else if (currentSection === 'intro' && isBullet) {
-      if (isBenefitItem) {
-        benefitList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
-      } else {
-        syaratList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
+    } else if (currentSection === 'intro') {
+      if (isBullet || isBenefitItem || isSyaratKeyword) {
+        // Jangan masukkan baris pertama jika itu adalah judul lowongan
+        if (cleanedItem.toLowerCase() === posisi.toLowerCase()) continue;
+        if (/^(dibutuhkan|dicari|lowongan)/i.test(cleanedItem) && !isBullet) continue;
+        if (isBenefitItem) {
+          benefitList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
+        } else if (isSyaratKeyword || isBullet) {
+          syaratList.push(cleanedItem.charAt(0).toUpperCase() + cleanedItem.slice(1));
+        }
       }
     }
   }
@@ -249,93 +259,57 @@ export function parseRawJobTextLocally(rawText) {
 }
 
 /**
- * Ekstraksi Cerdas menggunakan LLM AI jika API Key tersedia, dengan fallback instan ke Parser Lokal
+ * Ekstraksi Cerdas menggunakan LLM AI (Groq / OpenRouter / Gemini) jika API Key tersedia, dengan fallback instan ke Parser Lokal
  */
 export async function extractJobFromRawText(rawText) {
-  const apiKey = getGeminiApiKey();
-
-  // Jika tidak ada API Key, gunakan parser lokal yang super cepat & akurat
-  if (!apiKey) {
-    return parseRawJobTextLocally(rawText);
-  }
-
   try {
-    const activeModel = getActiveGeminiModel() || 'gemini-2.5-flash';
-    const systemPrompt = `Kamu adalah sistem AI parser lowongan kerja profesional untuk portal loker Karesidenan Madiun (Karmadi).
-Tugasmu: Bedah teks lowongan kerja mentah berikut dan kembalikan HANYA JSON murni (tanpa markdown, tanpa \`\`\`json) dengan format objek berikut:
+    const systemPrompt = `Kamu adalah sistem AI parser lowongan kerja profesional untuk portal loker Karesidenan Madiun (KARMADI).
+Tugasmu: Bedah teks lowongan kerja mentah berikut secara menyeluruh (100% semua informasi harus terbaca: kualifikasi, gaji/benefit, dan catatan/ketentuan tambahan) dan kembalikan HANYA JSON murni dengan format objek berikut:
 {
   "posisi": "Nama posisi pekerjaan yang jelas dan spesifik (contoh: Tenaga Packing Online Shop, Barista, Staff Gudang)",
-  "nama_perusahaan": "Nama toko / perusahaan / pemilik usaha (jika tidak ada sebutkan nama jenis toko misal Online Shop Madiun)",
+  "nama_perusahaan": "Nama toko / perusahaan / pemilik usaha (jika tidak tertulis sebutkan jenis usaha misal Online Shop Madiun / Mitra Usaha Madiun)",
   "kategori": "Salah satu dari: Admin | Sales | Kasir | Gudang | F&B | Teknik | IT | Kesehatan | Desain | Umum",
   "tipe": "Salah satu dari: Full Time | Freelance | Part Time | Magang | Kontrak",
-  "wilayah": "Salah satu dari: Kota Madiun | Kab Madiun | Magetan | Ngawi | Ponorogo | Pacitan | Luar Kota Lain",
+  "wilayah": "Salah satu dari: Kota Madiun | Kab. Madiun | Magetan | Ngawi | Ponorogo | Pacitan | Luar Kota Lain",
   "lokasi": "Detail lokasi atau penempatan kerja",
-  "syarat": ["Poin syarat 1", "Poin syarat 2", "Poin syarat 3"],
-  "benefit": ["Poin gaji harian/bulanan", "Uang lembur & makan", "Mess dsb jika ada"],
-  "catatan": "Keterangan tambahan dan ketentuan lain seperti jam kerja, hari panggilan masuk, sistem kerja dsb",
-  "kontak_wa": "Nomor WhatsApp (hanya angka, diawali 62)",
+  "syarat": ["Semua poin kualifikasi/persyaratan pelamar"],
+  "benefit": ["Semua poin gaji, upah harian/bulanan, uang makan, uang lembur, mess, bonus, insentif, BPJS jika ada"],
+  "catatan": "Semua ketentuan lain di luar syarat umum, seperti jam kerja, hari kerja/panggilan, sistem kerja, pakaian, batas lamaran, dll",
+  "kontak_wa": "Nomor WhatsApp resmi (hanya angka, diawali 62)",
   "email": "Alamat email jika ada",
   "link_pendaftaran": "URL formulir online jika ada",
   "is_walk_in": false
 }`;
 
-    // Panggil Gemini REST API jika key adalah Google Gemini
-    if (apiKey.startsWith('AIza')) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${activeModel}:generateContent?key=${apiKey}`;
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                { text: systemPrompt },
-                { text: `Teks Lowongan Mentah:\n${rawText}` }
-              ]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 1024,
-            responseMimeType: 'application/json'
-          }
-        })
-      });
+    const aiParsed = await extractJobTextWithAI(rawText, systemPrompt);
+    const parsed = Array.isArray(aiParsed) ? aiParsed[0] : aiParsed;
 
-      if (response.ok) {
-        const data = await response.json();
-        const jsonStr = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (jsonStr) {
-          const parsed = JSON.parse(jsonStr.replace(/```json/g, '').replace(/```/g, '').trim());
-          return {
-            posisi: parsed.posisi || 'Posisi Lowongan',
-            nama_perusahaan: parsed.nama_perusahaan || 'Perusahaan Mitra',
-            poster_url: '',
-            logo_url: '',
-            kategori: parsed.kategori || 'Umum',
-            tipe: parsed.tipe || 'Full Time',
-            wilayah: parsed.wilayah || 'Kota Madiun',
-            lokasi: parsed.lokasi || 'Kota Madiun',
-            syarat: Array.isArray(parsed.syarat) ? parsed.syarat.join('\n') : (parsed.syarat || ''),
-            benefit: Array.isArray(parsed.benefit) ? parsed.benefit.join('\n') : (parsed.benefit || ''),
-            catatan: typeof parsed.catatan === 'string' ? parsed.catatan : (Array.isArray(parsed.catatan) ? parsed.catatan.join('\n') : ''),
-            kontak_wa: (parsed.kontak_wa || '').replace(/[^0-9]/g, ''),
-            email: parsed.email || '',
-            link_pendaftaran: parsed.link_pendaftaran || '',
-            is_walk_in: Boolean(parsed.is_walk_in),
-            alamat_walk_in: '',
-            warna_primer: parsed.tipe === 'Freelance' ? '#7C3AED' : '#2B4CE0',
-            is_urgent: Boolean(parsed.is_urgent) || /urgent|segera|butuh cepat/i.test(rawText),
-            tanggal_mulai: getTodayDateString(),
-            tanggal_selesai: addMonths(getTodayDateString(), 1),
-            is_manual: true,
-          };
-        }
-      }
+    if (parsed && (parsed.posisi || parsed.nama_perusahaan)) {
+      return {
+        posisi: parsed.posisi || 'Posisi Lowongan',
+        nama_perusahaan: parsed.nama_perusahaan || 'Perusahaan Mitra',
+        poster_url: '',
+        logo_url: '',
+        kategori: parsed.kategori || 'Umum',
+        tipe: parsed.tipe || 'Full Time',
+        wilayah: parsed.wilayah || 'Kota Madiun',
+        lokasi: parsed.lokasi || 'Kota Madiun',
+        syarat: Array.isArray(parsed.syarat) ? parsed.syarat.join('\n') : (parsed.syarat || ''),
+        benefit: Array.isArray(parsed.benefit) ? parsed.benefit.join('\n') : (parsed.benefit || ''),
+        catatan: typeof parsed.catatan === 'string' ? parsed.catatan : (Array.isArray(parsed.catatan) ? parsed.catatan.join('\n') : ''),
+        kontak_wa: String(parsed.kontak_wa || '').replace(/[^0-9]/g, ''),
+        email: parsed.email || '',
+        link_pendaftaran: parsed.link_pendaftaran || '',
+        is_walk_in: Boolean(parsed.is_walk_in),
+        alamat_walk_in: parsed.alamat_walk_in || '',
+        warna_primer: parsed.tipe === 'Freelance' ? '#7C3AED' : '#2B4CE0',
+        is_urgent: Boolean(parsed.is_urgent) || /urgent|segera|butuh cepat/i.test(rawText),
+        tanggal_mulai: getTodayDateString(),
+        tanggal_selesai: addMonths(getTodayDateString(), 1),
+        is_manual: true,
+      };
     }
 
-    // Jika provider Groq / OpenRouter atau terjadi masalah, gunakan parser lokal
     return parseRawJobTextLocally(rawText);
   } catch (err) {
     console.warn('AI LLM parse error, fallback to local parser:', err);

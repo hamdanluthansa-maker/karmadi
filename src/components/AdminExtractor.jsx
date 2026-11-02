@@ -45,6 +45,7 @@ import {
   testGeminiApiKey,
   getActiveGeminiModel,
   setActiveGeminiModel,
+  syncAiConfigFromLocalServer,
   POPULAR_GEMINI_MODELS
 } from '../services/geminiService';
 
@@ -72,16 +73,29 @@ export default function AdminExtractor() {
   const [keyTestStatus, setKeyTestStatus] = useState(null);
 
   useEffect(() => {
-    const key = getGeminiApiKey();
-    setActiveApiKey(key);
-    setInputKey(key);
-    const m = getActiveGeminiModel();
-    setActiveModel(m);
-    setSelectedModel(m);
-    if (!POPULAR_GEMINI_MODELS.some(item => item.id === m)) {
-      setIsCustomModel(true);
-      setCustomModelName(m);
-    }
+    const initAiConfig = async () => {
+      let key = getGeminiApiKey();
+      let m = getActiveGeminiModel();
+      if (!key) {
+        const synced = await syncAiConfigFromLocalServer();
+        if (synced?.apiKey) {
+          key = synced.apiKey;
+          m = getActiveGeminiModel();
+        }
+      } else {
+        setGeminiApiKey(key);
+        setActiveGeminiModel(m);
+      }
+      setActiveApiKey(key);
+      setInputKey(key);
+      setActiveModel(m);
+      setSelectedModel(m);
+      if (!POPULAR_GEMINI_MODELS.some(item => item.id === m)) {
+        setIsCustomModel(true);
+        setCustomModelName(m);
+      }
+    };
+    initAiConfig();
   }, []);
 
   const fileInputRef = useRef(null);
@@ -1956,15 +1970,17 @@ Lamaran beserta data diri dan CV dikirim lewat WA ke nomor :
                   type="button"
                   onClick={() => {
                     let chosen = isCustomModel && customModelName.trim() ? customModelName.trim() : selectedModel;
-                    if (inputKey.trim().startsWith('gsk_') && chosen.includes('llama-4-scout')) {
-                      chosen = 'qwen/qwen3.8-27b';
+                    const trimmedKey = inputKey.trim();
+                    if (trimmedKey.startsWith('gsk_') && !chosen.includes('llama')) {
+                      chosen = 'meta-llama/llama-4-scout-17b-16e-instruct';
                     }
-                    setGeminiApiKey(inputKey);
-                    setActiveApiKey(inputKey.trim());
+                    setGeminiApiKey(trimmedKey);
+                    setActiveApiKey(trimmedKey);
                     setActiveGeminiModel(chosen);
                     setActiveModel(chosen);
+                    setSelectedModel(chosen);
                     setIsKeyModalOpen(false);
-                    showToast(inputKey.trim() ? `Vision AI (${chosen}) Berhasil Diaktifkan!` : 'Kembali ke Engine OCR Cerdas Lokal');
+                    showToast(trimmedKey ? `Vision AI (${chosen}) Berhasil Diaktifkan!` : 'Kembali ke Engine OCR Cerdas Lokal');
                   }}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs transition-colors shadow-sm cursor-pointer"
                 >

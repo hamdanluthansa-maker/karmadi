@@ -404,17 +404,35 @@ export function parsePosterText(rawText) {
     nama_perusahaan = 'Perusahaan Mitra Kota Madiun';
   }
 
-  // 5. Ekstraksi Persyaratan / Kualifikasi Bersih (Tanpa Header dan Tanpa Noise)
+  // 5. Ekstraksi Persyaratan, Benefit, dan Catatan Bersih (Tanpa Header dan Tanpa Noise)
   const blacklistHeader = [
     'we\'re hiring', 'we\'re', 'we\'r e', 'hiring', 'hiring!', 'lowongan', 'lowongan kerja',
     'recruitment', 'open recruitment', 'dibutuhkan', 'kota madiun', 'madiun', 'poster resmi',
-    'profil sdm', 'profil sdm :', 'kualifikasi', 'persyaratan', 'syarat', 'lokasi', 'kirim lamaran ke'
+    'profil sdm', 'profil sdm :', 'kualifikasi', 'persyaratan', 'syarat', 'lokasi', 'kirim lamaran ke',
+    'benefit', 'fasilitas', 'catatan', 'keterangan'
   ];
 
   const syarat = [];
+  const benefit = [];
+  const catatanList = [];
+  let activeSection = 'syarat';
+
   for (let idx = 0; idx < lines.length; idx++) {
     const line = lines[idx];
     const lineLower = line.toLowerCase().trim();
+
+    if (/^(benefit|fasilitas|tunjangan|keuntungan)\s*:?$/i.test(lineLower)) {
+      activeSection = 'benefit';
+      continue;
+    }
+    if (/^(kualifikasi|persyaratan|syarat|kriteria)\s*:?$/i.test(lineLower)) {
+      activeSection = 'syarat';
+      continue;
+    }
+    if (/^(catatan|note|nb|keterangan|info tambahan)\s*:?$/i.test(lineLower)) {
+      activeSection = 'catatan';
+      continue;
+    }
 
     // Skip blacklist header
     if (blacklistHeader.some((b) => lineLower === b || lineLower === b + '!')) continue;
@@ -429,35 +447,46 @@ export function parsePosterText(rawText) {
     if (/^mn\s+un\s+uan/i.test(lineLower) || /^site\?/i.test(lineLower) || /^das\./i.test(lineLower)) continue;
     if (lineLower.length < 5) continue;
 
-    // Syarat yang valid biasanya memiliki bullet point, label field seperti "Pendidikan :", atau kata kunci kualifikasi
-    const hasBullet = /^[•\-\*\>\#\»\«\d\.\)\s]+/.test(line);
-    const hasColonField = /^(pendidikan|pengalaman|pelatihan|sertifikasi|kualifikasi|syarat|usia|kriteria|ipk)\s*:/i.test(line);
-    const hasKeyTerm = /\b(ners|str|ppni|btcls|ipk|profesi|s1|d3|sma|smk|pengalaman|fresh graduate|komunikasi|jujur|disiplin|tanggap|tanggung jawab|akuntansi|akutansi|excel|sheet|sim|pria|wanita|sehat|domisili)\b/i.test(line);
+    const hasBullet = /^[•\-\*\>\#\»\«✅✔✓☑📌🔹🔸▪️▫️👉\d\.\)\s]+/.test(line);
+    const hasColonField = /^(pendidikan|pengalaman|pelatihan|sertifikasi|kualifikasi|syarat|usia|kriteria|ipk|penempatan|jam kerja)\s*:/i.test(line);
+    const hasBenefitTerm = /\b(gaji|bonus|insentif|bpjs|thr|makan|mess|komisi|jenjang karir|uang lembur|tunjangan)\b/i.test(line);
+    const hasNoteTerm = /\b(batas|paling lambat|deadline|tidak dipungut biaya|gratis|berkas lamaran|bawa lamaran|walk in)\b/i.test(line);
+    const hasKeyTerm = /\b(ners|str|ppni|btcls|ipk|profesi|s1|d3|d4|sma|smk|smp|lulusan|minimal|pengalaman|fresh graduate|komunikasi|jujur|disiplin|tanggap|tanggung jawab|akuntansi|akutansi|excel|sheet|sim|pria|wanita|laki|perempuan|usia|maksimal|sehat|domisili|mampu|bisa|menguasai|bersedia|berpenampilan|rapi|cekatan|shift|kerja)\b/i.test(line);
 
-    if (hasBullet || hasColonField || hasKeyTerm) {
+    if (hasBullet || hasColonField || hasKeyTerm || hasBenefitTerm || hasNoteTerm) {
       let clean = line
-        .replace(/^[•\-\*\>\#\»\«\d\.\)\s]+/, '')
+        .replace(/^[•\-\*\>\#\»\«✅✔✓☑📌🔹🔸▪️▫️👉\d\.\)\s]+/, '')
         .replace(/[\:\-]+$/, '')
         .trim();
 
       // Sambung baris berikutnya jika terputus di kata 'serta' / 'dan' / 'atau'
       if (/(serta|dan|atau|,)$/i.test(clean) && idx + 1 < lines.length) {
         const nextClean = lines[idx + 1]
-          .replace(/^[•\-\*\>\#\»\«\d\.\)\s]+/, '')
+          .replace(/^[•\-\*\>\#\»\«✅✔✓☑📌🔹🔸▪️▫️👉\d\.\)\s]+/, '')
           .replace(/[\:\-]+$/, '')
           .trim();
         clean = `${clean} ${nextClean}`;
         idx++;
       }
 
-      if (clean.length > 5 && !clean.includes('@')) {
+      if (clean.length > 4 && !clean.includes('@')) {
         clean = clean.charAt(0).toUpperCase() + clean.slice(1);
         clean = clean.replace(/30Tahun/i, '30 Tahun');
         clean = clean.replace(/D-Ill/i, 'D-III');
         clean = clean.replace(/Akutansi/g, 'Akuntansi');
 
-        if (!syarat.some((s) => s.toLowerCase() === clean.toLowerCase())) {
-          syarat.push(clean);
+        if (activeSection === 'benefit' || (hasBenefitTerm && !hasKeyTerm)) {
+          if (!benefit.some((b) => b.toLowerCase() === clean.toLowerCase())) {
+            benefit.push(clean);
+          }
+        } else if (activeSection === 'catatan' || hasNoteTerm) {
+          if (!catatanList.some((c) => c.toLowerCase() === clean.toLowerCase())) {
+            catatanList.push(clean);
+          }
+        } else {
+          if (!syarat.some((s) => s.toLowerCase() === clean.toLowerCase())) {
+            syarat.push(clean);
+          }
         }
       }
     }
@@ -475,6 +504,8 @@ export function parsePosterText(rawText) {
             'Jujur, disiplin, dan bertanggung jawab',
             'Sehat jasmani dan rohani'
           ],
+    benefit,
+    catatan: catatanList.join('\n'),
     kontak_wa,
     email,
     link_pendaftaran,
