@@ -26,7 +26,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' http://localhost:5173 https://api.groq.com https://openrouter.ai https://generativelanguage.googleapis.com https://cdn.jsdelivr.net; frame-ancestors 'none';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' http://localhost:5173 https://api.groq.com https://openrouter.ai https://generativelanguage.googleapis.com https://cdn.jsdelivr.net https://api.cloudinary.com; frame-ancestors 'none';"
         }
       ]
     }
