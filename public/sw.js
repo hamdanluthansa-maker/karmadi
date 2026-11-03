@@ -1,5 +1,5 @@
 // Service Worker KARMADI PWA (Cache-first for static shell, Network-first for fresh jobs data)
-const CACHE_NAME = 'karmadi-pwa-v1';
+const CACHE_NAME = 'karmadi-pwa-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

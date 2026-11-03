@@ -16,11 +16,14 @@ import {
   Zap,
   Clock,
   BarChart3,
+  Cloud,
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import AdminExtractor from '../components/AdminExtractor';
 import AdminJobList from '../components/AdminJobList';
 import AdminAnalyticsDashboard from '../components/AdminAnalyticsDashboard';
+import CloudinarySettingsModal from '../components/CloudinarySettingsModal';
+import { isCloudinaryConfigured } from '../services/cloudinaryService';
 import { useJobs } from '../context/JobContext';
 import { 
   verifyAdminCredentials, 
@@ -39,6 +42,7 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const { jobs } = useJobs();
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'list'
+  const [isCloudinaryModalOpen, setIsCloudinaryModalOpen] = useState(false);
 
   // Metrik riil yang dihitung dinamis dari database loker
   const uniqueMitraCount = useMemo(() => {
@@ -239,6 +243,20 @@ export default function AdminPage() {
             <div className="flex items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
+                onClick={() => setIsCloudinaryModalOpen(true)}
+                className={`flex items-center gap-1.5 text-xs font-black px-3.5 py-2 rounded-xl transition-all cursor-pointer border shadow-sm ${
+                  isCloudinaryConfigured()
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                    : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-400 animate-pulse'
+                }`}
+                title="Penyimpanan Gambar Cloudinary (Hemat 9MB)"
+              >
+                <Cloud className={`w-3.5 h-3.5 ${isCloudinaryConfigured() ? 'text-emerald-600' : 'text-white'}`} />
+                <span>{isCloudinaryConfigured() ? 'Cloud Storage: Aktif' : '☁️ Setup Cloud Storage'}</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={handlePublishToVercel}
                 disabled={isPublishingOnline}
                 className="flex items-center gap-1.5 text-xs font-black px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shadow-emerald-600/25 transition-all cursor-pointer active:scale-95 disabled:opacity-60"
@@ -410,6 +428,11 @@ export default function AdminPage() {
           </span>
         </div>
       </footer>
+
+      <CloudinarySettingsModal
+        isOpen={isCloudinaryModalOpen}
+        onClose={() => setIsCloudinaryModalOpen(false)}
+      />
     </div>
   );
 }
