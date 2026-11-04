@@ -1,5 +1,5 @@
 // Service Worker KARMADI PWA (Cache-first for static shell, Network-first for fresh jobs data)
-const CACHE_NAME = 'karmadi-pwa-v2';
+const CACHE_NAME = 'karmadi-pwa-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -33,6 +33,11 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+
+  // Biarkan browser menangani cross-origin secara langsung (CDN, external API, dsb)
+  if (url.origin !== self.location.origin) {
+    return;
+  }
 
   // Jangan cache API AI atau panggilan backend dinamis
   if (
